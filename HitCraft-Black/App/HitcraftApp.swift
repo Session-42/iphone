@@ -17,6 +17,7 @@ struct HitcraftApp: App {
     
     var body: some Scene {
         WindowGroup {
+            ChatView(artistId: "default_artist_id")
             ContentView()
                 .environmentObject(authService)
                 .environmentObject(themeManager)
