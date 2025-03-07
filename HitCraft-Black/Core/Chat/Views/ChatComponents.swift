@@ -1,15 +1,14 @@
-// File: HitCraft-Black/Core/Chat/Views/ChatComponents.swift
-
 import SwiftUI
 
 // MARK: - Message Bubble
-
 struct MessageBubble: View {
     let isFromUser: Bool
     let text: String
     
-    private let userBubbleColor = Color(hex: "FF4A7D").opacity(0.15)
-    private let systemBubbleColor = Color(hex: "2a2a2a")
+    // Updated bubble colors as specified
+    private let userBubbleColor = Color(hex: "1d1d1c")
+    private let systemBubbleColor = Color(hex: "383835")
+    private let textColor = Color(hex: "F5F4EF")
     
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -24,7 +23,7 @@ struct MessageBubble: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(text)
                         .font(.system(size: 16))
-                        .foregroundColor(Color.white)
+                        .foregroundColor(textColor)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -45,7 +44,6 @@ struct MessageBubble: View {
 }
 
 // MARK: - Typing Indicator
-
 struct TypingIndicator: View {
     @State private var dotOffset: CGFloat = 0
     
@@ -71,7 +69,6 @@ struct TypingIndicator: View {
 }
 
 // MARK: - Chat Input
-
 struct ChatInput: View {
     @Binding var text: String
     let placeholder: String
@@ -99,8 +96,8 @@ struct ChatInput: View {
                     .padding(.leading, 16)
                     .padding(.trailing, 8)
                     .padding(.vertical, 12)
-                    .foregroundColor(Color.white)
-                    .background(backgroundColor) // Use the same background color
+                    .foregroundColor(Color(hex: "F5F4EF"))
+                    .background(backgroundColor)
                 
                 // Send button inside the input area
                 Button(action: onSend) {
@@ -130,66 +127,64 @@ struct ChatInput: View {
     }
 }
 
-// MARK: - Helper Components
-
-// Custom shape for rounded corners only on specific sides
+// MARK: - Custom shape for rounded corners
 struct RoundedCorners: Shape {
     var topLeft: CGFloat = 0
     var topRight: CGFloat = 0
     var bottomLeft: CGFloat = 0
     var bottomRight: CGFloat = 0
-
+    
     func path(in rect: CGRect) -> Path {
         var path = Path()
-
+        
         let width = rect.size.width
         let height = rect.size.height
-
+        
         // Make sure we do not exceed the size of the rectangle
         let topRight = min(min(self.topRight, height/2), width/2)
         let topLeft = min(min(self.topLeft, height/2), width/2)
         let bottomLeft = min(min(self.bottomLeft, height/2), width/2)
         let bottomRight = min(min(self.bottomRight, height/2), width/2)
-
+        
         // Top left corner
         path.move(to: CGPoint(x: rect.minX, y: rect.minY + topLeft))
         path.addArc(center: CGPoint(x: rect.minX + topLeft, y: rect.minY + topLeft),
-                   radius: topLeft,
-                   startAngle: Angle(degrees: 180),
-                   endAngle: Angle(degrees: 270),
-                   clockwise: false)
-
+                    radius: topLeft,
+                    startAngle: Angle(degrees: 180),
+                    endAngle: Angle(degrees: 270),
+                    clockwise: false)
+        
         // Top right corner
         path.addLine(to: CGPoint(x: rect.maxX - topRight, y: rect.minY))
         path.addArc(center: CGPoint(x: rect.maxX - topRight, y: rect.minY + topRight),
-                   radius: topRight,
-                   startAngle: Angle(degrees: 270),
-                   endAngle: Angle(degrees: 0),
-                   clockwise: false)
-
+                    radius: topRight,
+                    startAngle: Angle(degrees: 270),
+                    endAngle: Angle(degrees: 0),
+                    clockwise: false)
+        
         // Bottom right corner
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - bottomRight))
         path.addArc(center: CGPoint(x: rect.maxX - bottomRight, y: rect.maxY - bottomRight),
-                   radius: bottomRight,
-                   startAngle: Angle(degrees: 0),
-                   endAngle: Angle(degrees: 90),
-                   clockwise: false)
-
+                    radius: bottomRight,
+                    startAngle: Angle(degrees: 0),
+                    endAngle: Angle(degrees: 90),
+                    clockwise: false)
+        
         // Bottom left corner
         path.addLine(to: CGPoint(x: rect.minX + bottomLeft, y: rect.maxY))
         path.addArc(center: CGPoint(x: rect.minX + bottomLeft, y: rect.maxY - bottomLeft),
-                   radius: bottomLeft,
-                   startAngle: Angle(degrees: 90),
-                   endAngle: Angle(degrees: 180),
-                   clockwise: false)
-
+                    radius: bottomLeft,
+                    startAngle: Angle(degrees: 90),
+                    endAngle: Angle(degrees: 180),
+                    clockwise: false)
+        
         path.closeSubpath()
-
+        
         return path
     }
 }
 
-// Button style for subtle animations
+// MARK: - Button style
 struct HitCraftButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -198,7 +193,7 @@ struct HitCraftButtonStyle: ButtonStyle {
     }
 }
 
-// Extension to create standard button styles
+// MARK: - View extension for button style
 extension View {
     func hitCraftStyle() -> some View {
         self.buttonStyle(HitCraftButtonStyle())

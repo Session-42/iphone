@@ -16,38 +16,40 @@ struct ChatView: View {
     private let chatService = ChatService.shared
     
     // Use the specific color for the header background
-    private let headerColor = Color(hex: "3d3c3a")
+    private let headerColor = Color(hex: "21211f")
+    private let backgroundColor = Color(hex: "2e2e2c")
+
     
     var body: some View {
         VStack(spacing: 0) {
             // Top Header with new chat button
             HStack {
                 Spacer()
-                Text("CHAT")
+                Text("HitCraft")
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(Color.white)
+                    .foregroundColor(Color(hex: "F5F4EF"))
                 Spacer()
                 
                 // New Chat Button
                 Button(action: {
-                    // Start new chat
-                    Task {
-                        ChatService.shared.activeThreadId = nil
-                        await loadInitialChat()
+                                    // Start new chat
+                        Task {
+                            ChatService.shared.activeThreadId = nil
+                            await loadInitialChat()
+                        }
+                    }) {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 20))
+                            .foregroundColor(HitCraftColors.accent)
                     }
-                }) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 20))
-                        .foregroundColor(HitCraftColors.accent)
+                    .padding(.trailing, 20)
+                    .hitCraftStyle()
                 }
-                .padding(.trailing, 20)
-                .hitCraftStyle()
-            }
-            .frame(height: 44)
-            .padding(.leading, 20)
-            .background(headerColor)
-            .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-            
+                .frame(height: 44)
+                .padding(.leading, 20)
+                .background(headerColor) // Updated header color
+                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+
             // Chat Messages
             ScrollViewReader { proxy in
                 ScrollView {

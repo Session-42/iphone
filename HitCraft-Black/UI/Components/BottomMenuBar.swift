@@ -66,7 +66,7 @@ struct BottomMenuBar: View {
                 }
             )
         }
-        .frame(height: 60)
+        .frame(height: 70) // Increased height to add extra space at bottom
         .background(backgroundColor)
         .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: -1)
     }
@@ -78,16 +78,22 @@ struct MenuButton: View {
     let isSelected: Bool
     let action: () -> Void
     
+    // Light text color as specified
+    private let textColor = Color(hex: "F5F4EF")
+    
     var body: some View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 22))
-                    .foregroundColor(isSelected ? HitCraftColors.accent : Color.gray.opacity(0.7))
+                    .foregroundColor(isSelected ? HitCraftColors.accent : textColor)
+                    .padding(.top, 10) // Push icon up by 10px
                 
                 Text(text)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isSelected ? HitCraftColors.accent : Color.gray.opacity(0.7))
+                    .foregroundColor(isSelected ? HitCraftColors.accent : textColor)
+                
+                Spacer() // Push content to the top, creating more space at bottom
             }
             .frame(maxWidth: .infinity)
         }
