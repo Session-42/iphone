@@ -14,9 +14,22 @@
 		7AF297162D7B42FB00FE0C92 /* HitCraft-Black.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "HitCraft-Black.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7AEE5C432D7B66D00019EE99 /* Exceptions for "HitCraft-Black" folder in "HitCraft-Black" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7AF297152D7B42FB00FE0C92 /* HitCraft-Black */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7AF297182D7B42FB00FE0C92 /* HitCraft-Black */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7AEE5C432D7B66D00019EE99 /* Exceptions for "HitCraft-Black" folder in "HitCraft-Black" target */,
+			);
 			path = "HitCraft-Black";
 			sourceTree = "<group>";
 		};
