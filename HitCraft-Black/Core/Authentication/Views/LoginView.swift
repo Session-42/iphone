@@ -1,13 +1,16 @@
+// File: HitCraft-Black/Core/Authentication/Views/LoginView.swift
+
 import SwiftUI
 
 struct LoginView: View {
-    @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var authService: HCAuthService
     @State private var isLoading = false
     
     var body: some View {
         NavigationView {
             ZStack {
-                Color(.systemBackground)
+                // Dark background
+                HitCraftColors.background
                     .ignoresSafeArea()
                 
                 VStack(spacing: 30) {
@@ -77,12 +80,14 @@ struct LoginView: View {
                 isLoading = false
             }
         }
+        .preferredColorScheme(.dark) // Force dark mode
     }
 }
 
 struct LoginView_Previews: PreviewProvider {
     static var previews: some View {
         LoginView()
-            .environmentObject(AuthService.shared)
+            .environmentObject(HCAuthService.shared)
+            .preferredColorScheme(.dark)
     }
 }

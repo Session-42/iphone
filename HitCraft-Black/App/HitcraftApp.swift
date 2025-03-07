@@ -1,10 +1,12 @@
+// File: HitCraft-Black/App/HitcraftApp.swift
+
 import SwiftUI
 import DescopeKit
 
 @main
 struct HitcraftApp: App {
     // Initialize auth service at app level
-    @StateObject private var authService = AuthService.shared
+    @StateObject private var authService = HCAuthService.shared
     // Initialize theme manager to be available globally
     @StateObject private var themeManager = ThemeManager.shared
     
@@ -17,11 +19,10 @@ struct HitcraftApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ChatView(artistId: "default_artist_id")
             ContentView()
                 .environmentObject(authService)
                 .environmentObject(themeManager)
-                .preferredColorScheme(themeManager.currentTheme == .dark ? .dark : .light)
+                .preferredColorScheme(.dark) // Always use dark mode
         }
     }
 }

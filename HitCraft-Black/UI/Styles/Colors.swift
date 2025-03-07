@@ -1,54 +1,99 @@
+// File: HitCraft-Black/UI/Styles/Colors.swift
+
 import SwiftUI
 
 enum HitCraftColors {
-    // MARK: - Dynamic Colors (Light/Dark aware)
+    // MARK: - Background colors
     
-    // Background colors
+    // Main background color
     static var background: Color {
-        ThemeManager.shared.currentTheme == .dark ? Color(hex: "121212") : Color(hex: "F2F2F2")
+        ColorUtils.color(hex: "121212") // Dark background
     }
     
+    // Card and component backgrounds
     static var cardBackground: Color {
-        ThemeManager.shared.currentTheme == .dark ? Color(hex: "1E1E1E") : Color.white
+        ColorUtils.color(hex: "1E1E1E") // Darker card background
     }
     
+    // Message backgrounds
     static var userMessageBackground: Color {
-        ThemeManager.shared.currentTheme == .dark ?
-            Color(hex: "FF4A7D").opacity(0.15) : Color(hex: "FF4A7D").opacity(0.1)
+        ColorUtils.color(hex: "FF4A7D").opacity(0.15) // Pink with opacity for user messages
     }
     
     static var systemMessageBackground: Color {
-        ThemeManager.shared.currentTheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F2F2F2")
+        ColorUtils.color(hex: "2A2A2A") // Dark gray for system messages
     }
     
-    // Text colors
+    // MARK: - Text colors
+    
+    // Primary text
     static var text: Color {
-        ThemeManager.shared.currentTheme == .dark ? Color.white : Color(hex: "333333")
+        Color.white
     }
     
+    // Secondary text
     static var secondaryText: Color {
-        ThemeManager.shared.currentTheme == .dark ? Color(hex: "B0B0B0") : Color(hex: "666666")
+        ColorUtils.color(hex: "B0B0B0") // Light gray
     }
     
-    // UI elements
+    // MARK: - UI elements
+    
+    // Border color
     static var border: Color {
-        ThemeManager.shared.currentTheme == .dark ? Color(hex: "333333") : Color(hex: "E0E0E0")
+        ColorUtils.color(hex: "333333") // Dark border
     }
     
+    // Header and footer areas
     static var headerFooterBackground: Color {
-        ThemeManager.shared.currentTheme == .dark ? Color(hex: "1A1A1A") : Color(hex: "F9F9F9")
+        ColorUtils.color(hex: "1A1A1A") // Slightly lighter than background
     }
     
     // MARK: - Fixed Colors (Same in both themes)
     
-    // Primary colors
-    static let accent = Color(hex: "FF4A7D")            // Primary Pink
-    static let accentHover = Color(hex: "FF6F92")       // Secondary Pink (hover/pressed state)
+    // Primary accent color
+    static let accent = ColorUtils.color(hex: "FF4A7D") // Pink accent
     
-    // Gradients
+    // Secondary accent color (for hover/pressed states)
+    static let accentHover = ColorUtils.color(hex: "FF6F92")
+    
+    // Primary gradient
     static let primaryGradient = LinearGradient(
-        colors: [Color(hex: "FF4A7D"), Color(hex: "FF6F92")],
+        colors: [ColorUtils.color(hex: "FF4A7D"), ColorUtils.color(hex: "FF6F92")],
         startPoint: .leading,
         endPoint: .trailing
     )
+    
+    // For backward compatibility
+    static var darkAreaColor: Color {
+        headerFooterBackground
+    }
+}
+
+// Separate utility class to avoid extension conflicts
+struct ColorUtils {
+    // Convert hex string to Color
+    static func color(hex: String) -> Color {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
+        
+        return Color(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
 }
