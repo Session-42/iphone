@@ -13,22 +13,22 @@ public struct ArtistsResponse: Codable {
 public final class ArtistApi {
     private let apiClient: ApiClient
     
-    public static let shared = ArtistApi(apiClient: .shared)
+    public static let shared = ArtistApi()
     
-    public init(apiClient: ApiClient = .shared) {
+    private init(apiClient: ApiClient = .shared) {
         self.apiClient = apiClient
     }
     
     public func list() async throws -> [ArtistProfile] {
         let response: ArtistsResponse = try await apiClient.get(
-            path: HitCraftNetworkConfiguration.Endpoints.Artist.base
+            path: "/api/v1/artist"  // Hardcoded path since NetworkConfiguration is causing issues
         )
         return Array(response.artists.values).sorted { $0.name < $1.name }
     }
     
     public func get(artistId: String) async throws -> ArtistProfile {
         return try await apiClient.get(
-            path: HitCraftNetworkConfiguration.Endpoints.Artist.getArtist(artistId)
+            path: "/api/v1/artist/\(artistId)"  // Hardcoded path
         )
     }
 }

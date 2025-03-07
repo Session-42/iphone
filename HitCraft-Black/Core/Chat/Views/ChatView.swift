@@ -1,10 +1,11 @@
 import SwiftUI
+import Foundation 
 
 struct ChatView: View {
     @State private var messageText = ""
     @State private var messages: [ChatMessage] = []
     @State private var isTyping = false
-    @State private var error: Error?
+    @State private var error: ApiError?
     @State private var showError = false
     
     let artistId: String
@@ -72,7 +73,8 @@ struct ChatView: View {
                 }
             } catch {
                 await MainActor.run {
-                    self.error = error
+                    // Convert to ApiError if it's not already
+                    self.error = error as? ApiError ?? ApiError.networkError(error)
                     showError = true
                     isTyping = false
                 }
