@@ -1,47 +1,6 @@
-import SwiftUI
+// File: HitCraft-Black/Core/Chat/Views/ChatComponents.swift
 
-// MARK: - Message Bubble
-struct MessageBubble: View {
-    let isFromUser: Bool
-    let text: String
-    
-    // Updated bubble colors as specified
-    private let userBubbleColor = Color(hex: "1d1d1c")
-    private let systemBubbleColor = Color(hex: "383835")
-    private let textColor = Color(hex: "F5F4EF")
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
-                if isFromUser {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .frame(width: 32, height: 32)
-                        .foregroundColor(Color.gray.opacity(0.7))
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(text)
-                        .font(.system(size: 16))
-                        .foregroundColor(textColor)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                if !isFromUser {
-                    Spacer(minLength: 32)
-                }
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity)
-            .background(isFromUser ? userBubbleColor : systemBubbleColor)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
-        }
-        .padding(.horizontal, 8)
-        .transition(.opacity.combined(with: .scale(scale: 0.98)))
-    }
-}
+import SwiftUI
 
 // MARK: - Typing Indicator
 struct TypingIndicator: View {
@@ -65,65 +24,6 @@ struct TypingIndicator: View {
         .onAppear {
             dotOffset = -5
         }
-    }
-}
-
-// MARK: - Chat Input
-struct ChatInput: View {
-    @Binding var text: String
-    let placeholder: String
-    let isTyping: Bool
-    let onSend: () -> Void
-    
-    // Use the exact color you specified
-    private let backgroundColor = Color(hex: "3d3c3a")
-    
-    // Send button color
-    private var sendButtonColor: Color {
-        if text.isEmpty || isTyping {
-            return Color.gray.opacity(0.6)
-        } else {
-            return Color.white
-        }
-    }
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Input field with embedded send button
-            HStack(spacing: 0) {
-                TextField(placeholder, text: $text)
-                    .font(.system(size: 16))
-                    .padding(.leading, 16)
-                    .padding(.trailing, 8)
-                    .padding(.vertical, 12)
-                    .foregroundColor(Color(hex: "F5F4EF"))
-                    .background(backgroundColor)
-                
-                // Send button inside the input area
-                Button(action: onSend) {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(sendButtonColor)
-                        .padding(8)
-                        .background(
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
-                        )
-                        .padding(.trailing, 12)
-                }
-                .disabled(text.isEmpty || isTyping)
-                .hitCraftStyle()
-                .scaleEffect(isTyping ? 0.95 : 1.0)
-            }
-            .background(backgroundColor)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-        }
-        .background(backgroundColor)
-        // Only rounded corners at the top
-        .clipShape(
-            RoundedCorners(topLeft: 16, topRight: 16, bottomLeft: 0, bottomRight: 0)
-        )
     }
 }
 
