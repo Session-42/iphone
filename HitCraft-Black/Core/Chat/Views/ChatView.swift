@@ -13,6 +13,8 @@ struct ChatView: View {
     @State private var bottomPadding: CGFloat = 80 // Increased padding space above the message bar
     
     let artistId: String
+    var showInputField: Bool = true // New parameter to control input field visibility
+    
     private let chatService = ChatService.shared
     
     var body: some View {
@@ -94,6 +96,8 @@ struct ChatView: View {
                             .id("bottomSpacer")
                     }
                     .padding(.vertical, 16)
+                    // Add extra padding at the bottom to compensate for the overlapping input field
+                    .padding(.bottom, showInputField ? 0 : 16)
                 }
                 .onChange(of: messages) { _ in
                     scrollToBottom(proxy: proxy, animated: true)
@@ -119,16 +123,31 @@ struct ChatView: View {
                 .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
                     self.keyboardHeight = 0
                 }
+                .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SendChatMessage"))) { notification in
+                    if let messageText = notification.object as? String {
+                        sendMessage(text: messageText)
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshChat"))) { _ in
+                    Task {
+                        await loadInitialChat()
+                    }
+                }
             }
             .background(HitCraftColors.chatBackground)
+            // Add negative padding if input is shown in this view
+            .padding(.bottom, showInputField ? -16 : 0)
             
-            // Custom Input Bar with embedded send button
-            ChatInput(
-                text: $messageText,
-                placeholder: "Type your message...",
-                isTyping: isTyping,
-                onSend: sendMessage
-            )
+            // Only include the input field if showInputField is true
+            if showInputField {
+                // Custom Input Bar with embedded send button
+                ChatInput(
+                    text: $messageText,
+                    placeholder: "Type your message...",
+                    isTyping: isTyping,
+                    onSend: sendMessage
+                )
+            }
         }
         .task {
             await loadInitialChat()
@@ -209,15 +228,23 @@ struct ChatView: View {
         }
     }
     
+    // Method to send a message from inside the view
     private func sendMessage() {
         guard !messageText.isEmpty else { return }
         
         let userText = messageText
         messageText = ""
         
+        sendMessage(text: userText)
+    }
+    
+    // Method that can be called externally or internally
+    func sendMessage(text: String) {
+        guard !text.isEmpty else { return }
+        
         // Create user message
         let userMessage = ChatMessage(
-            content: userText,
+            content: text,
             sender: "user"
         )
         
@@ -245,7 +272,7 @@ struct ChatView: View {
                 try await Task.sleep(nanoseconds: 600_000_000) // 0.6 seconds
                 
                 let responseMessage = try await chatService.sendMessage(
-                    text: userText,
+                    text: text,
                     artistId: artistId
                 )
                 
