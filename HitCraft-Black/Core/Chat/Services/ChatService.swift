@@ -1,4 +1,4 @@
-// File: HitCraft-Black/Core/Chat/Services/ChatService.swift
+// File: HitCraft-Black/Services/ChatService.swift
 
 import Foundation
 
@@ -129,57 +129,28 @@ final class ChatService {
     
     // MARK: - Private Helper Methods
     private func parseChatMessageResponse(_ response: [String: Any]) throws -> ChatMessage {
-        // First try to parse message from the expected structure
-        if let messageData = response["message"] as? [String: Any] {
-            // Try to handle both array and direct content formats
-            if let contentArray = messageData["content"] as? [[String: Any]], let firstContent = contentArray.first, let messageText = firstContent["text"] as? String {
-                let timestamp = messageData["timestamp"] as? String ?? ISO8601DateFormatter().string(from: Date())
-                let role = messageData["role"] as? String ?? "assistant"
-                
-                // Parse ISO8601 date
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                
-                let date = formatter.date(from: timestamp) ?? Date()
-                
-                return ChatMessage(
-                    content: messageText,
-                    sender: role,
-                    timestamp: date
-                )
-            }
-            // Try alternative format where content might be a direct string
-            else if let directContent = messageData["content"] as? String {
-                let timestamp = messageData["timestamp"] as? String ?? ISO8601DateFormatter().string(from: Date())
-                let role = messageData["role"] as? String ?? "assistant"
-                
-                // Parse ISO8601 date
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                
-                let date = formatter.date(from: timestamp) ?? Date()
-                
-                return ChatMessage(
-                    content: directContent,
-                    sender: role,
-                    timestamp: date
-                )
-            }
+        guard
+            let messageData = response["message"] as? [String: Any],
+            let contentArray = messageData["content"] as? [[String: Any]],
+            let firstContent = contentArray.first,
+            let messageText = firstContent["text"] as? String,
+            let timestamp = messageData["timestamp"] as? String,
+            let role = messageData["role"] as? String
+        else {
+            throw HCNetwork.Error.decodingError(NSError(domain: "ChatService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse message response"]))
         }
         
-        // Fallback method if the expected structure isn't found
-        // This is just to ensure we can handle unexpected response formats
-        if let messageData = response["data"] as? [String: Any],
-           let messageObj = messageData["message"] as? [String: Any],
-           let text = messageObj["content"] as? String {
-            return ChatMessage(
-                content: text,
-                sender: messageObj["role"] as? String ?? "assistant",
-                timestamp: Date()
-            )
-        }
+        // Parse ISO8601 date
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         
-        throw HCNetwork.Error.decodingError(NSError(domain: "ChatService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse message response"]))
+        let date = formatter.date(from: timestamp) ?? Date()
+        
+        return ChatMessage(
+            content: messageText,
+            sender: role,
+            timestamp: date
+        )
     }
     
     private func generateMockChatMessage(for message: String) -> ChatMessage {

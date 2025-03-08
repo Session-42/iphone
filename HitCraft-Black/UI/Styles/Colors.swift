@@ -1,5 +1,3 @@
-// File: HitCraft-Black/UI/Styles/Colors.swift
-
 import SwiftUI
 
 enum HitCraftColors {
@@ -10,35 +8,38 @@ enum HitCraftColors {
         ColorUtils.color(hex: "121212") // Dark background
     }
     
-    // Chat background
-    static var chatBackground: Color {
-        ColorUtils.color(hex: "2e2e2c") // Chat background as specified
-    }
-    
     // Card and component backgrounds
     static var cardBackground: Color {
         ColorUtils.color(hex: "1E1E1E") // Darker card background
     }
     
-    // Message backgrounds - exact colors as specified
+    // Message backgrounds
     static var userMessageBackground: Color {
-        ColorUtils.color(hex: "1d1d1c") // User message background
+        ColorUtils.color(hex: "1d1d1c") // Updated user message background
     }
     
     static var systemMessageBackground: Color {
-        ColorUtils.color(hex: "383835") // System message background
+        ColorUtils.color(hex: "383835") // Updated system message background
     }
     
-    // Header background color
+    // Chat backgrounds - NEW
     static var headerBackground: Color {
-        ColorUtils.color(hex: "21211f") // Header background as specified
+        ColorUtils.color(hex: "21211f") // Dark header background
+    }
+    
+    static var chatBackground: Color {
+        ColorUtils.color(hex: "2e2e2c") // Dark chat background
+    }
+    
+    static var chatInputBackground: Color {
+        ColorUtils.color(hex: "3d3c3a") // Dark input background
     }
     
     // MARK: - Text colors
     
     // Primary text
     static var text: Color {
-        Color.white
+        ColorUtils.color(hex: "F5F4EF") // Light text
     }
     
     // Secondary text
@@ -55,25 +56,20 @@ enum HitCraftColors {
     
     // Header and footer areas
     static var headerFooterBackground: Color {
-        ColorUtils.color(hex: "21211f") // Updated to match header color
+        ColorUtils.color(hex: "21211f") // Updated to match header
     }
     
-    // Input background
-    static var inputBackground: Color {
-        ColorUtils.color(hex: "3d3c3a") // Input field background
-    }
-    
-    // MARK: - Fixed Colors
+    // MARK: - Fixed Colors (Same in both themes)
     
     // Primary accent color
-    static let accent = ColorUtils.color(hex: "d6307a") // Pink/purple accent
+    static let accent = ColorUtils.color(hex: "FF4A7D") // Pink accent
     
     // Secondary accent color (for hover/pressed states)
-    static let accentHover = ColorUtils.color(hex: "e74d93") // Lighter version
+    static let accentHover = ColorUtils.color(hex: "FF6F92")
     
     // Primary gradient
     static let primaryGradient = LinearGradient(
-        colors: [ColorUtils.color(hex: "d6307a"), ColorUtils.color(hex: "e74d93")],
+        colors: [ColorUtils.color(hex: "FF4A7D"), ColorUtils.color(hex: "FF6F92")],
         startPoint: .leading,
         endPoint: .trailing
     )
