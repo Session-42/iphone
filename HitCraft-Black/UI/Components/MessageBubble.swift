@@ -4,8 +4,15 @@ import WebKit
 struct MessageBubble: View {
     let isFromUser: Bool
     let text: String
+    let associatedMessage: ChatMessage?
     
-    // Parse message content to separate text and YouTube embeds
+    init(isFromUser: Bool, text: String, associatedMessage: ChatMessage? = nil) {
+        self.isFromUser = isFromUser
+        self.text = text
+        self.associatedMessage = associatedMessage
+    }
+    
+    // Parse message content to separate text, YouTube embeds, and other content types
     private var parsedContent: [(type: String, content: String)] {
         var result: [(type: String, content: String)] = []
         var remainingText = text
@@ -61,10 +68,12 @@ struct MessageBubble: View {
                     // Display parsed content
                     ForEach(Array(parsedContent.enumerated()), id: \.offset) { index, item in
                         if item.type == "text" {
-                            Text(item.content)
+                            // Simply clean the markdown symbols without trying to render them
+                            Text(MarkdownCleaner.cleanMarkdown(item.content))
                                 .font(HitCraftFonts.body())
                                 .foregroundColor(HitCraftColors.text)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         } else if item.type == "youtube" {
                             YouTubeVideoView(videoID: item.content)
                                 .frame(height: 220)
@@ -164,28 +173,5 @@ struct YouTubeVideoView: UIViewRepresentable {
         """
         
         uiView.loadHTMLString(embedHTML, baseURL: nil)
-    }
-}
-
-// Preview provider for testing
-struct MessageBubble_Previews: PreviewProvider {
-    static var previews: some View {
-        VStack(spacing: 20) {
-            MessageBubble(isFromUser: false, text: """
-            Check out these two great songs:
-            
-            <iframe src="https://www.youtube.com/embed/AKnC-W-JPJk" allow="autoplay; encrypted-media" allowfullscreen style="border-radius: 12px; width: 100%; height: 300px;"></iframe>
-            
-            And this one too:
-            
-            <iframe src="https://www.youtube.com/embed/fJ9rUzIMcZQ" allow="autoplay; encrypted-media" allowfullscreen style="border-radius: 12px; width: 100%; height: 300px;"></iframe>
-            
-            What do you think?
-            """)
-            
-            MessageBubble(isFromUser: true, text: "I love those songs!")
-        }
-        .padding()
-        .background(Color.black)
     }
 }

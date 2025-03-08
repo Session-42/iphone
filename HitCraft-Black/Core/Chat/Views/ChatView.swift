@@ -68,12 +68,16 @@ struct ChatView: View {
                             .padding(.top, 100)
                         } else {
                             ForEach(chatManager.messages) { message in
-                                MessageBubble(isFromUser: message.isFromUser, text: message.text)
-                                    .id(message.id)
-                                    .transition(.asymmetric(
-                                        insertion: .scale(scale: 0.98).combined(with: .opacity),
-                                        removal: .opacity
-                                    ))
+                                MessageBubble(
+                                    isFromUser: message.isFromUser,
+                                    text: message.text,
+                                    associatedMessage: message
+                                )
+                                .id(message.id)
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.98).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
                             }
                         }
                         

@@ -1,4 +1,4 @@
-// File: HitCraft-Black/Services/ChatService.swift
+// File: HitCraft-Black/Core/Chat/Services/ChatService.swift
 
 import Foundation
 
@@ -181,9 +181,14 @@ final class ChatService {
         
         let date = formatter.date(from: timestamp) ?? Date()
         
+        // Check if the response contains a "format" field - this would indicate if it's markdown
+        let format = firstContent["format"] as? String ?? "text"
+        let type = format == "markdown" ? "markdown" : "text"
+        
         return ChatMessage(
             content: messageText,
             sender: role,
+            type: type,
             timestamp: date
         )
     }
