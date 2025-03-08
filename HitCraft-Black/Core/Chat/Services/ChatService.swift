@@ -7,6 +7,7 @@ final class ChatService {
     // MARK: - Properties
     private let apiClient: ApiClient
     var activeThreadId: String?
+    private var messageCache: [String: [ChatMessage]] = [:] // Cache to store messages by threadId
     
     static let shared = ChatService(apiClient: .shared)
     
@@ -17,6 +18,13 @@ final class ChatService {
     
     // MARK: - Public Methods
     func createChat(artistId: String) async throws -> String {
+        // If we already have an active thread ID, return it
+        if let activeThreadId = self.activeThreadId,
+           !activeThreadId.hasPrefix("mock-thread-") ||
+           !activeThreadId.hasPrefix("sample-thread-") {
+            return activeThreadId
+        }
+        
         do {
             // Create a chat thread
             let path = HCNetwork.Environment.Endpoint.createChat()
@@ -54,26 +62,26 @@ final class ChatService {
     }
     
     func sendMessage(text: String, artistId: String) async throws -> ChatMessage {
-        // Check if we have a mock thread ID and should return a mock response
-        if let threadId = self.activeThreadId,
-           (threadId.hasPrefix("mock-thread-") || threadId.hasPrefix("sample-thread-")) {
-            return generateMockChatMessage(for: text)
-        }
-        
-        // Get or create a real thread ID
+        // Check if we have a thread ID first
         let threadId: String
-        if let existingThreadId = self.activeThreadId, !existingThreadId.hasPrefix("sample-thread-") {
+        if let existingThreadId = self.activeThreadId {
             threadId = existingThreadId
         } else {
-            do {
-                threadId = try await createChat(artistId: artistId)
-            } catch {
-                return ChatMessage(
-                    content: "I'm having trouble connecting. Please check your internet connection and try again.",
-                    sender: "assistant",
-                    timestamp: Date()
-                )
+            // Create a new thread if we don't have one
+            threadId = try await createChat(artistId: artistId)
+        }
+        
+        // Check if we have a mock thread ID and should return a mock response
+        if threadId.hasPrefix("mock-thread-") || threadId.hasPrefix("sample-thread-") {
+            let mockResponse = generateMockChatMessage(for: text)
+            
+            // Cache the message
+            if messageCache[threadId] == nil {
+                messageCache[threadId] = []
             }
+            messageCache[threadId]?.append(mockResponse)
+            
+            return mockResponse
         }
         
         do {
@@ -97,7 +105,15 @@ final class ChatService {
             )
             
             // Parse the response
-            return try parseChatMessageResponse(response)
+            let chatMessage = try parseChatMessageResponse(response)
+            
+            // Cache the message
+            if messageCache[threadId] == nil {
+                messageCache[threadId] = []
+            }
+            messageCache[threadId]?.append(chatMessage)
+            
+            return chatMessage
         } catch HCNetwork.Error.unauthorized {
             // For unauthorized errors, trigger logout
             await HCAuthService.shared.logout()
@@ -111,11 +127,24 @@ final class ChatService {
             print("Error sending message: \(error.localizedDescription)")
             
             // Return a mock response for development/testing
-            return generateMockChatMessage(for: text)
+            let mockResponse = generateMockChatMessage(for: text)
+            
+            // Cache the message
+            if messageCache[threadId] == nil {
+                messageCache[threadId] = []
+            }
+            messageCache[threadId]?.append(mockResponse)
+            
+            return mockResponse
         }
     }
     
     func getChatHistory(artistId: String) async throws -> [ChatMessage] {
+        // If we have cached messages for the current thread, return them
+        if let threadId = self.activeThreadId, let messages = messageCache[threadId], !messages.isEmpty {
+            return messages
+        }
+        
         // If we have a mock thread ID, return mock messages
         if let threadId = self.activeThreadId,
            (threadId.hasPrefix("mock-thread-") || threadId.hasPrefix("sample-thread-")) {
@@ -125,6 +154,12 @@ final class ChatService {
         // For now, return an empty array as the history endpoint may not be implemented
         // This can be expanded once the API supports chat history retrieval
         return []
+    }
+    
+    // Clear all chat data when starting a new chat
+    func clearChatData() {
+        activeThreadId = nil
+        // Don't clear cache entirely, just make sure we don't use it for the next chat
     }
     
     // MARK: - Private Helper Methods

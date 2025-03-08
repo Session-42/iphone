@@ -5,12 +5,12 @@ import SwiftUI
 struct MainRootView: View {
     @EnvironmentObject private var authService: HCAuthService
     @EnvironmentObject private var themeManager: ThemeManager
+    @ObservedObject private var chatManager = ChatPersistenceManager.shared
     @State private var defaultArtist = ArtistProfile.sample
     @State private var selectedTab: MenuTab = .chat
     @State private var error: Error?
     @State private var showError = false
     @State private var messageText = ""
-    @State private var isTyping = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -26,7 +26,7 @@ struct MainRootView: View {
                 ChatInput(
                     text: $messageText,
                     placeholder: "Type your message...",
-                    isTyping: isTyping,
+                    isTyping: chatManager.isTyping,
                     onSend: {
                         // Pass the send action to the ChatView
                         NotificationCenter.default.post(name: NSNotification.Name("SendChatMessage"), object: messageText)
@@ -37,7 +37,8 @@ struct MainRootView: View {
             
             // Bottom Menu Bar - no spacing between this and the input above
             BottomMenuBar(selectedTab: $selectedTab, onStartNewChat: {
-                ChatService.shared.activeThreadId = nil
+                // Clear chat data to start fresh
+                chatManager.clearChat()
                 selectedTab = .chat
                 // Notify chat view to refresh
                 NotificationCenter.default.post(name: NSNotification.Name("RefreshChat"), object: nil)

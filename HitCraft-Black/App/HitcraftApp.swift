@@ -9,6 +9,8 @@ struct HitcraftApp: App {
     @StateObject private var authService = HCAuthService.shared
     // Initialize theme manager to be available globally
     @StateObject private var themeManager = ThemeManager.shared
+    // Initialize chat persistence manager
+    @StateObject private var chatManager = ChatPersistenceManager.shared
     
     init() {
         // Initialize Descope with your project ID
@@ -22,6 +24,7 @@ struct HitcraftApp: App {
             ContentView()
                 .environmentObject(authService)
                 .environmentObject(themeManager)
+                .environmentObject(chatManager)
                 .preferredColorScheme(.dark) // Always use dark mode
         }
     }

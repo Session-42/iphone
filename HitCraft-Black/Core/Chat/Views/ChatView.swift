@@ -2,20 +2,18 @@ import SwiftUI
 import Foundation
 
 struct ChatView: View {
+    // Use the shared persistence manager
+    @ObservedObject private var chatManager = ChatPersistenceManager.shared
     @State private var messageText = ""
-    @State private var messages: [ChatMessage] = []
-    @State private var isTyping = false
     @State private var error: HCNetwork.Error?
     @State private var showError = false
-    @State private var isLoadingMessages = true
+    @State private var isLoadingMessages = false
     @State private var scrollViewProxy: ScrollViewProxy? = nil
     @State private var keyboardHeight: CGFloat = 0
-    @State private var bottomPadding: CGFloat = 80 // Increased padding space above the message bar
+    @State private var bottomPadding: CGFloat = 80
     
     let artistId: String
-    var showInputField: Bool = true // New parameter to control input field visibility
-    
-    private let chatService = ChatService.shared
+    var showInputField: Bool = true
     
     var body: some View {
         VStack(spacing: 0) {
@@ -31,8 +29,10 @@ struct ChatView: View {
                 Button(action: {
                     // Start new chat
                     Task {
-                        ChatService.shared.activeThreadId = nil
-                        await loadInitialChat()
+                        chatManager.clearChat()
+                        isLoadingMessages = true
+                        await chatManager.initializeChat(artistId: artistId)
+                        isLoadingMessages = false
                     }
                 }) {
                     Image(systemName: "square.and.pencil")
@@ -54,7 +54,7 @@ struct ChatView: View {
                         if isLoadingMessages {
                             ProgressView()
                                 .padding()
-                        } else if messages.isEmpty {
+                        } else if chatManager.messages.isEmpty {
                             VStack(spacing: 16) {
                                 Text("Start a new conversation")
                                     .font(HitCraftFonts.subheader())
@@ -67,7 +67,7 @@ struct ChatView: View {
                             }
                             .padding(.top, 100)
                         } else {
-                            ForEach(messages) { message in
+                            ForEach(chatManager.messages) { message in
                                 MessageBubble(isFromUser: message.isFromUser, text: message.text)
                                     .id(message.id)
                                     .transition(.asymmetric(
@@ -77,7 +77,7 @@ struct ChatView: View {
                             }
                         }
                         
-                        if isTyping {
+                        if chatManager.isTyping {
                             HStack {
                                 Text("Typing")
                                     .font(HitCraftFonts.caption())
@@ -90,31 +90,47 @@ struct ChatView: View {
                             .transition(.opacity)
                         }
                         
-                        // Invisible spacer at the bottom with increased height
+                        // Invisible spacer at the bottom
                         Color.clear
                             .frame(height: bottomPadding)
                             .id("bottomSpacer")
                     }
                     .padding(.vertical, 16)
-                    // Add extra padding at the bottom to compensate for the overlapping input field
                     .padding(.bottom, showInputField ? 0 : 16)
                 }
-                .onChange(of: messages) { _ in
+                .onChange(of: chatManager.messages.count) { _ in
                     scrollToBottom(proxy: proxy, animated: true)
                 }
-                .onChange(of: isTyping) { newValue in
+                .onChange(of: chatManager.isTyping) { newValue in
                     if newValue {
-                        // If typing indicator appears, scroll to it
                         scrollToTypingIndicator(proxy: proxy)
                     }
                 }
                 .onAppear {
                     self.scrollViewProxy = proxy
+                    
+                    // Initialize chat if needed
+                    if !chatManager.isInitialized {
+                        Task {
+                            isLoadingMessages = true
+                            await chatManager.initializeChat(artistId: artistId)
+                            isLoadingMessages = false
+                            
+                            // After messages load, scroll to bottom
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                scrollToBottom(proxy: proxy, animated: true)
+                            }
+                        }
+                    } else {
+                        // If already initialized, just scroll to the bottom
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            scrollToBottom(proxy: proxy, animated: true)
+                        }
+                    }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
                     if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
                         self.keyboardHeight = keyboardFrame.height
-                        // When keyboard appears, ensure we scroll to the bottom
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             scrollToBottom(proxy: proxy, animated: true)
                         }
@@ -130,12 +146,14 @@ struct ChatView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RefreshChat"))) { _ in
                     Task {
-                        await loadInitialChat()
+                        chatManager.clearChat()
+                        isLoadingMessages = true
+                        await chatManager.initializeChat(artistId: artistId)
+                        isLoadingMessages = false
                     }
                 }
             }
             .background(HitCraftColors.chatBackground)
-            // Add negative padding if input is shown in this view
             .padding(.bottom, showInputField ? -16 : 0)
             
             // Only include the input field if showInputField is true
@@ -144,13 +162,10 @@ struct ChatView: View {
                 ChatInput(
                     text: $messageText,
                     placeholder: "Type your message...",
-                    isTyping: isTyping,
+                    isTyping: chatManager.isTyping,
                     onSend: sendMessage
                 )
             }
-        }
-        .task {
-            await loadInitialChat()
         }
         .alert("Error", isPresented: $showError) {
             Button("OK", role: .cancel) {}
@@ -165,18 +180,18 @@ struct ChatView: View {
     private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {
         if animated {
             withAnimation(.easeOut(duration: 0.3)) {
-                if let lastMessage = messages.last {
+                if let lastMessage = chatManager.messages.last {
                     proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                } else if isTyping {
+                } else if chatManager.isTyping {
                     proxy.scrollTo("typingIndicator", anchor: .bottom)
                 } else {
                     proxy.scrollTo("bottomSpacer", anchor: .bottom)
                 }
             }
         } else {
-            if let lastMessage = messages.last {
+            if let lastMessage = chatManager.messages.last {
                 proxy.scrollTo(lastMessage.id, anchor: .bottom)
-            } else if isTyping {
+            } else if chatManager.isTyping {
                 proxy.scrollTo("typingIndicator", anchor: .bottom)
             } else {
                 proxy.scrollTo("bottomSpacer", anchor: .bottom)
@@ -187,44 +202,6 @@ struct ChatView: View {
     private func scrollToTypingIndicator(proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.3)) {
             proxy.scrollTo("typingIndicator", anchor: .bottom)
-        }
-    }
-    
-    func loadInitialChat() async {
-        isLoadingMessages = true
-        
-        do {
-            // Create a new chat with welcome message
-            let message = try await chatService.sendMessage(
-                text: "Hello, I'd like to create music",
-                artistId: artistId
-            )
-            
-            // Add an initial welcome message
-            let welcomeMessage = ChatMessage(
-                content: "Welcome! I'm HitCraft, your AI music assistant. How can I help with your music today?",
-                sender: "assistant",
-                timestamp: Date().addingTimeInterval(-3600) // 1 hour ago
-            )
-            
-            isLoadingMessages = false
-            
-            // Use a simple animation approach to avoid NaN errors
-            withAnimation(.easeIn(duration: 0.3)) {
-                messages = [welcomeMessage, message]
-            }
-            
-            // Scroll to bottom after loading messages
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                if let scrollViewProxy = self.scrollViewProxy {
-                    self.scrollToBottom(proxy: scrollViewProxy, animated: true)
-                }
-            }
-        } catch {
-            // Handle errors like "No chat history available"
-            self.error = error as? HCNetwork.Error ?? HCNetwork.Error.networkError(error)
-            showError = true
-            isLoadingMessages = false
         }
     }
     
@@ -242,66 +219,9 @@ struct ChatView: View {
     func sendMessage(text: String) {
         guard !text.isEmpty else { return }
         
-        // Create user message
-        let userMessage = ChatMessage(
-            content: text,
-            sender: "user"
-        )
-        
-        // Add user message with simple animation
-        withAnimation(.easeIn(duration: 0.3)) {
-            messages.append(userMessage)
-        }
-        
-        // Show typing indicator
-        withAnimation(.easeIn(duration: 0.3)) {
-            isTyping = true
-        }
-        
-        // Ensure we scroll to the typing indicator
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            if let scrollViewProxy = self.scrollViewProxy {
-                self.scrollToTypingIndicator(proxy: scrollViewProxy)
-            }
-        }
-        
-        // Send message to API
+        // Use the persistence manager to send the message
         Task {
-            do {
-                // Add a small artificial delay to make it feel more natural
-                try await Task.sleep(nanoseconds: 600_000_000) // 0.6 seconds
-                
-                let responseMessage = try await chatService.sendMessage(
-                    text: text,
-                    artistId: artistId
-                )
-                
-                // Hide typing indicator with animation
-                withAnimation(.easeOut(duration: 0.2)) {
-                    isTyping = false
-                }
-                
-                // Short pause before showing the response
-                try await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
-                
-                // Add the response message with animation
-                withAnimation(.easeIn(duration: 0.3)) {
-                    messages.append(responseMessage)
-                }
-                
-                // Scroll to the new message
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if let scrollViewProxy = self.scrollViewProxy {
-                        self.scrollToBottom(proxy: scrollViewProxy, animated: true)
-                    }
-                }
-            } catch {
-                withAnimation {
-                    isTyping = false
-                }
-                self.error = error as? HCNetwork.Error ?? HCNetwork.Error.networkError(error)
-                showError = true
-            }
+            await chatManager.sendMessage(text: text, artistId: artistId)
         }
     }
 }
