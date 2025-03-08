@@ -31,7 +31,7 @@ struct ChatInput: View {
                     // Placeholder text with proper alignment
                     if text.isEmpty {
                         Text(placeholder)
-                            .font(HitCraftFonts.body())
+                            .font(HitCraftFonts.body()) // Using Poppins font from HitCraftFonts
                             .foregroundColor(HitCraftColors.secondaryText)
                             .padding(.leading, 15)
                             .padding(.vertical, 8)
@@ -43,6 +43,8 @@ struct ChatInput: View {
                         .padding(.vertical, 2)
                 }
                 .frame(height: min(textViewHeight + 16, maxHeight + 16))
+                .padding(.leading, 0) // No extra padding here
+                .padding(.trailing, 0) // No extra padding here
                 
                 // Send button with gradient border when active
                 Button(action: onSend) {
@@ -70,7 +72,7 @@ struct ChatInput: View {
                 .hitCraftStyle()
                 .scaleEffect(isTyping ? 0.95 : 1.0)
             }
-            .padding(.horizontal, 15)
+            .padding(.horizontal, 15) // Only padding at this level
             .padding(.vertical, 10)
             .background(HitCraftColors.chatInputBackground)
         }
@@ -97,21 +99,39 @@ struct UITextViewWrapper: UIViewRepresentable {
         textView.isUserInteractionEnabled = true
         textView.backgroundColor = UIColor.clear
         textView.textColor = UIColor.white
-        textView.font = UIFont.systemFont(ofSize: 16)
         
-        // Set proper insets to ensure cursor and text start at the correct position
+        // Use Poppins font to match HitCraftFonts.body()
+        if let poppinsFont = UIFont(name: "Poppins-Regular", size: 16) {
+            textView.font = poppinsFont
+        } else {
+            // Fallback to system font if Poppins is not available
+            textView.font = UIFont.systemFont(ofSize: 16)
+        }
+        
+        // Set exact left inset to 15px with no additional padding
         textView.textContainerInset = UIEdgeInsets(top: 8, left: 15, bottom: 8, right: 15)
-        textView.textContainer.lineFragmentPadding = 0 // This removes extra padding
+        textView.textContainer.lineFragmentPadding = 0 // Remove extra padding
         textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         
-        // Center the cursor position vertically
+        // Center the cursor position vertically and use Poppins font
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = 0
-        textView.typingAttributes = [
-            .paragraphStyle: paragraphStyle,
-            .font: UIFont.systemFont(ofSize: 16),
-            .foregroundColor: UIColor.white
-        ]
+        
+        // Use Poppins font for typing attributes
+        if let poppinsFont = UIFont(name: "Poppins-Regular", size: 16) {
+            textView.typingAttributes = [
+                .paragraphStyle: paragraphStyle,
+                .font: poppinsFont,
+                .foregroundColor: UIColor.white
+            ]
+        } else {
+            textView.typingAttributes = [
+                .paragraphStyle: paragraphStyle,
+                .font: UIFont.systemFont(ofSize: 16),
+                .foregroundColor: UIColor.white
+            ]
+        }
+        
         return textView
     }
     

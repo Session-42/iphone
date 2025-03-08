@@ -29,19 +29,41 @@ struct MessageBubble: View {
             .padding(HitCraftLayout.messagePadding)
             .frame(maxWidth: .infinity)
             .background(isFromUser ? HitCraftColors.userMessageBackground : HitCraftColors.systemMessageBackground)
+            .overlay(
+                Group {
+                    if !isFromUser {
+                        HStack(spacing: 0) {
+                            // Left pink border
+                            VStack(spacing: 0) {
+                                // Top extension
+                                Rectangle()
+                                    .fill(HitCraftColors.accent)
+                                    .frame(width: 5, height: 2)
+                                    .offset(x: 0)
+                                
+                                // Vertical line
+                                Rectangle()
+                                    .fill(HitCraftColors.accent)
+                                    .frame(width: 2)
+                                    .frame(maxHeight: .infinity)
+                                
+                                // Bottom extension
+                                Rectangle()
+                                    .fill(HitCraftColors.accent)
+                                    .frame(width: 5, height: 2)
+                                    .offset(x: 0)
+                            }
+                            .padding(.vertical, 0)
+                            
+                            Spacer()
+                        }
+                    }
+                }
+            )
             .clipShape(RoundedRectangle(cornerRadius: HitCraftLayout.messageBubbleRadius))
             .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
         }
         .padding(.horizontal, 8)
         .transition(.opacity.combined(with: .scale(scale: 0.98)))
     }
-}
-
-#Preview {
-    VStack(spacing: 20) {
-        MessageBubble(isFromUser: true, text: "Hey, this is a test message from the user. How does it look?")
-        MessageBubble(isFromUser: false, text: "This is a response from the assistant that might be a bit longer to test how the bubble handles multiple lines of text.")
-    }
-    .padding()
-    .background(HitCraftColors.chatBackground)
 }
