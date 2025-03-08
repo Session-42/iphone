@@ -21,7 +21,7 @@ final class ChatService {
         // If we already have an active thread ID, return it
         if let activeThreadId = self.activeThreadId,
            !activeThreadId.hasPrefix("mock-thread-") ||
-           !activeThreadId.hasPrefix("sample-thread-") {
+            !activeThreadId.hasPrefix("sample-thread-") {
             return activeThreadId
         }
         
@@ -219,15 +219,36 @@ final class ChatService {
     private func generateMockResponse(to message: String) -> String {
         // Add YouTube embed example if asked about a song
         if message.lowercased().contains("song") &&
-           (message.lowercased().contains("greatest") || message.lowercased().contains("best") ||
-            message.lowercased().contains("youtube") || message.lowercased().contains("video")) {
+            (message.lowercased().contains("greatest") || message.lowercased().contains("best") ||
+             message.lowercased().contains("youtube") || message.lowercased().contains("video")) {
             
             return """
             Based on many critics and polls, one of the greatest songs of all time is "Bohemian Rhapsody" by Queen. This epic 1975 masterpiece combined rock, opera, and ballad elements in a revolutionary way.
             
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/fJ9rUzIMcZQ" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            <iframe src="https://www.youtube.com/embed/fJ9rUzIMcZQ" allow="autoplay; encrypted-media" allowfullscreen style="border-radius: 12px; width: 100%; height: 300px;"></iframe>
             
             What aspects of this song inspire you for your own music?
+            """
+        }
+        
+        // For other music-related keywords, you can add more embedded videos
+        if message.lowercased().contains("sad") || message.lowercased().contains("emotional") {
+            return """
+            If you're looking for emotional music, Johnny Cash's cover of "Hurt" is incredibly powerful and moving.
+            
+            <iframe src="https://www.youtube.com/embed/8AHCfZTRGiI" allow="autoplay; encrypted-media" allowfullscreen style="border-radius: 12px; width: 100%; height: 300px;"></iframe>
+            
+            The raw emotion in his voice and the stark visuals of the music video make this one of the most powerful musical performances ever recorded.
+            """
+        }
+        
+        if message.lowercased().contains("classic") || message.lowercased().contains("rock") {
+            return """
+            Classic rock has some timeless pieces. Led Zeppelin's "Stairway to Heaven" is often considered one of the greatest rock songs ever written.
+            
+            <iframe src="https://www.youtube.com/embed/QkF3oxziUI4" allow="autoplay; encrypted-media" allowfullscreen style="border-radius: 12px; width: 100%; height: 300px;"></iframe>
+            
+            The composition gradually builds from a gentle acoustic beginning to an epic guitar solo finale.
             """
         }
         
