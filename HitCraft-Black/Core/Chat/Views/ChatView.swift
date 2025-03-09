@@ -18,32 +18,36 @@ struct ChatView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Top Header with new chat button
-            HStack {
-                Spacer()
+            ZStack {
+                // Title centered on screen (placed in ZStack to center it properly)
                 Text("HitCraft")
                     .font(HitCraftFonts.header())
                     .foregroundColor(HitCraftColors.text)
-                Spacer()
+                    .frame(maxWidth: .infinity, alignment: .center)
                 
-                // New Chat Button
-                Button(action: {
-                    // Start new chat
-                    Task {
-                        chatManager.clearChat()
-                        isLoadingMessages = true
-                        await chatManager.initializeChat(artistId: artistId)
-                        isLoadingMessages = false
+                // Button positioned on the right side
+                HStack {
+                    Spacer()
+                    
+                    Button(action: {
+                        // Start new chat
+                        Task {
+                            chatManager.clearChat()
+                            isLoadingMessages = true
+                            await chatManager.initializeChat(artistId: artistId)
+                            isLoadingMessages = false
+                        }
+                    }) {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 20))
+                            .foregroundColor(HitCraftColors.accent)
+                            .padding(.bottom, 3) // Bottom padding for alignment
                     }
-                }) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 20))
-                        .foregroundColor(HitCraftColors.accent)
+                    .padding(.trailing, 20)
+                    .hitCraftStyle()
                 }
-                .padding(.trailing, 20)
-                .hitCraftStyle()
             }
             .frame(height: 44)
-            .padding(.leading, 20)
             .background(HitCraftColors.headerBackground)
             .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
 

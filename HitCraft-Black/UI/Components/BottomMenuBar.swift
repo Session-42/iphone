@@ -17,7 +17,6 @@ struct BottomMenuBar: View {
                 // Chat Button - first position
                 MenuButton(
                     icon: "message",
-                    text: "Chat",
                     isSelected: selectedTab == .chat,
                     selectedColor: selectedColor,
                     action: {
@@ -28,7 +27,6 @@ struct BottomMenuBar: View {
                 // History Button - second position
                 MenuButton(
                     icon: "clock",
-                    text: "History",
                     isSelected: selectedTab == .history,
                     selectedColor: selectedColor,
                     action: {
@@ -39,7 +37,6 @@ struct BottomMenuBar: View {
                 // Productions Button
                 MenuButton(
                     icon: "music.note.list",
-                    text: "Productions",
                     isSelected: selectedTab == .productions,
                     selectedColor: selectedColor,
                     action: {
@@ -50,7 +47,6 @@ struct BottomMenuBar: View {
                 // Settings Button
                 MenuButton(
                     icon: "gearshape",
-                    text: "Settings",
                     isSelected: selectedTab == .settings,
                     selectedColor: selectedColor,
                     action: {
@@ -72,7 +68,6 @@ struct BottomMenuBar: View {
 
 struct MenuButton: View {
     let icon: String
-    let text: String
     let isSelected: Bool
     let selectedColor: Color
     let action: () -> Void
@@ -82,23 +77,15 @@ struct MenuButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                // Icon positioned properly - not too high
-                Image(systemName: icon)
-                    .font(.system(size: 22))
-                    .foregroundColor(isSelected ? selectedColor : textColor)
-                    .padding(.top, 6)
-                
-                // Text with consistent spacing
-                Text(text)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isSelected ? selectedColor : textColor)
-                    .padding(.bottom, 4)
-            }
-            .frame(maxWidth: .infinity)
+            // Just the icon, no text below it
+            Image(systemName: icon)
+                .font(.system(size: 24)) // Slightly larger icon since we removed text
+                .foregroundColor(isSelected ? selectedColor : textColor)
+                .padding(.vertical, 16) // Increased vertical padding to center in the bar
         }
         .buttonStyle(PlainButtonStyle())
         .scaleEffect(isSelected ? 1.05 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isSelected)
+        .frame(maxWidth: .infinity) // Take up equal space
     }
 }

@@ -8,11 +8,24 @@ struct ChatItem: Identifiable {
     let title: String
     var details: ChatDetails?
     var threadId: String?
+    var date: Date
+    var previewMessage: String?
+    var messageCount: Int?
     
-    init(title: String, details: ChatDetails? = nil, threadId: String? = nil) {
+    init(
+        title: String,
+        details: ChatDetails? = nil,
+        threadId: String? = nil,
+        date: Date = Date(),
+        previewMessage: String? = nil,
+        messageCount: Int? = nil
+    ) {
         self.title = title
         self.details = details
         self.threadId = threadId
+        self.date = date
+        self.previewMessage = previewMessage
+        self.messageCount = messageCount
     }
 }
 

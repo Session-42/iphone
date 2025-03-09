@@ -10,7 +10,12 @@ enum HitCraftColors {
     
     // Card and component backgrounds
     static var cardBackground: Color {
-        ColorUtils.color(hex: "1E1E1E") // Darker card background
+        ColorUtils.color(hex: "1d1d1c") // Updated darker card background
+    }
+    
+    // History view background
+    static var historyBackground: Color {
+        ColorUtils.color(hex: "2e2e2c") // Specific history view background
     }
     
     // Message backgrounds

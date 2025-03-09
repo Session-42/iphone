@@ -270,4 +270,107 @@ final class ChatService {
             return "I'd love to help with your music project! Could you tell me more about what you're working on or what specific aspect you need assistance with?"
         }
     }
+    
+    // MARK: - Chat History Methods
+    // Get chat thread history
+    func getChatThreads(artistId: String) async throws -> [ChatItem] {
+        // This is a mock implementation - in a real app you would call your API
+        let mockThreads = [
+            ChatItem(
+                title: "Need help with my 2nd verse lyrics",
+                details: ChatDetails(
+                    pluginName: "Songwriting",
+                    year: "2025",
+                    presetLink: "https://hitcraft.ai/presets/lyrics"
+                ),
+                threadId: "sample-thread-1",
+                date: Date().addingTimeInterval(-86400), // 1 day ago
+                previewMessage: "I'm working on a song and stuck on the second verse...",
+                messageCount: 12
+            ),
+            ChatItem(
+                title: "I need some help with good presets for kick drum sound",
+                details: ChatDetails(
+                    pluginName: "12/07/92",
+                    year: "2025",
+                    presetLink: "https://hitcraft.ai/presets/kick"
+                ),
+                threadId: "sample-thread-2",
+                date: Date().addingTimeInterval(-259200), // 3 days ago
+                previewMessage: "I'm looking for that punchy club kick sound...",
+                messageCount: 8
+            ),
+            ChatItem(
+                title: "Catchy drop ideas for EDM track",
+                details: ChatDetails(
+                    pluginName: "EDM Production",
+                    year: "2025",
+                    presetLink: "https://hitcraft.ai/presets/edm"
+                ),
+                threadId: "sample-thread-3",
+                date: Date().addingTimeInterval(-345600), // 4 days ago
+                previewMessage: "I want something that will really make the crowd go wild...",
+                messageCount: 15
+            ),
+            ChatItem(
+                title: "Pop ballad production tips",
+                details: ChatDetails(
+                    pluginName: "Pop Ballad",
+                    year: "2025",
+                    presetLink: "https://hitcraft.ai/presets/ballad"
+                ),
+                threadId: "sample-thread-4",
+                date: Date().addingTimeInterval(-604800), // 1 week ago
+                previewMessage: "I'm trying to create something like Adele meets The Weeknd...",
+                messageCount: 20
+            ),
+            ChatItem(
+                title: "Recommend the right tempo for my song",
+                details: ChatDetails(
+                    pluginName: "Tempo Guide",
+                    year: "2025",
+                    presetLink: "https://hitcraft.ai/presets/tempo"
+                ),
+                threadId: "sample-thread-5",
+                date: Date().addingTimeInterval(-1209600), // 2 weeks ago
+                previewMessage: "I'm not sure if this should be 90 or 110 bpm...",
+                messageCount: 5
+            )
+        ]
+        
+        return mockThreads
+    }
+    
+    // Get messages for a specific thread
+    func getChatThreadMessages(threadId: String) async throws -> [ChatMessage] {
+        // Find mock thread by ID
+        let mockThreads = try await getChatThreads(artistId: "default")
+        guard let thread = mockThreads.first(where: { $0.threadId == threadId }) else {
+            throw HCNetwork.Error.requestFailed("Thread not found")
+        }
+        
+        // Generate some messages based on the thread title
+        return [
+            ChatMessage(
+                content: "I was working on \(thread.title)",
+                sender: "user",
+                timestamp: Date().addingTimeInterval(-7200) // 2 hours ago
+            ),
+            ChatMessage(
+                content: "I'll help you with \(thread.title). Let me know what specific aspects you need assistance with.",
+                sender: "assistant",
+                timestamp: Date().addingTimeInterval(-7150) // Just after
+            ),
+            ChatMessage(
+                content: "Can you provide some examples for \(thread.title)?",
+                sender: "user",
+                timestamp: Date().addingTimeInterval(-7100)
+            ),
+            ChatMessage(
+                content: "Sure, here are some ideas for \(thread.title)...",
+                sender: "assistant",
+                timestamp: Date().addingTimeInterval(-7050)
+            )
+        ]
+    }
 }
