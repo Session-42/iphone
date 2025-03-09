@@ -8,7 +8,7 @@ struct BottomMenuBar: View {
     
     // Use the specific color
     private let backgroundColor = Color(hex: "3d3c3a")
-    private let selectedColor = Color(hex: "d6307a") // Updated accent color
+    private let selectedColor = Color(hex: "#fea5e3") // Updated accent color
     
     var body: some View {
         VStack(spacing: 0) {

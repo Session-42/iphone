@@ -5,7 +5,7 @@ enum HitCraftColors {
     
     // Main background color
     static var background: Color {
-        ColorUtils.color(hex: "121212") // Dark background
+        ColorUtils.color(hex: "21211f") // Dark background
     }
     
     // Card and component backgrounds
@@ -67,14 +67,14 @@ enum HitCraftColors {
     // MARK: - Fixed Colors (Same in both themes)
     
     // Primary accent color
-    static let accent = ColorUtils.color(hex: "FF4A7D") // Pink accent
+    static let accent = ColorUtils.color(hex: "FEA5E3") // Pink accent
     
     // Secondary accent color (for hover/pressed states)
-    static let accentHover = ColorUtils.color(hex: "FF6F92")
+    static let accentHover = ColorUtils.color(hex: "FEA5E3")
     
     // Primary gradient
     static let primaryGradient = LinearGradient(
-        colors: [ColorUtils.color(hex: "FF4A7D"), ColorUtils.color(hex: "FF6F92")],
+        colors: [ColorUtils.color(hex: "FEA5E3"), ColorUtils.color(hex: "FEA5E3")],
         startPoint: .leading,
         endPoint: .trailing
     )
