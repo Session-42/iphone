@@ -98,6 +98,11 @@ struct MessageBubble: View {
         return result
     }
     
+    // Check if text is likely a single line
+    private var isSingleLine: Bool {
+        return !text.contains("\n") && text.count < 50
+    }
+    
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             if !isFromUser {
@@ -159,17 +164,20 @@ struct MessageBubble: View {
                 .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
             } else {
                 // User message
-                HStack(alignment: .top, spacing: 12) {
+                HStack(alignment: isSingleLine ? .center : .top, spacing: 12) { // Center alignment for single line
                     Image(systemName: "person.circle.fill")
                         .resizable()
                         .frame(width: 32, height: 32)
                         .foregroundColor(Color.gray.opacity(0.7))
                     
+                    // For user messages with single lines, center the text vertically
                     Text(text)
                         .font(HitCraftFonts.body())
                         .foregroundColor(HitCraftColors.text)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        // Add vertical padding to ensure text is centered when it's a single line
+                        .padding(.vertical, isSingleLine ? 8 : 0)
                 }
                 .padding(HitCraftLayout.messagePadding)
                 .frame(maxWidth: .infinity)
