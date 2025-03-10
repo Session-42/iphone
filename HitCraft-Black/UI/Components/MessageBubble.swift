@@ -17,7 +17,7 @@ struct MessageBubble: View {
         var result: [(type: String, content: String)] = []
         var remainingText = text
         
-        // Find all iframe tags in the text
+        // Find all iframe tags or YouTube links in the text
         while let iframeStartRange = remainingText.range(of: "<iframe", options: .caseInsensitive) {
             // Add text before iframe as regular text
             let textBeforeIframe = remainingText[..<iframeStartRange.lowerBound]
@@ -46,8 +46,52 @@ struct MessageBubble: View {
             }
         }
         
-        // Add any remaining text
-        if !remainingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        // Look for direct YouTube links if no iframes were found
+        if result.isEmpty {
+            // Common YouTube URL patterns
+            let patterns = [
+                "youtube.com/watch\\?v=([\\w-]+)",
+                "youtu.be/([\\w-]+)",
+                "youtube.com/embed/([\\w-]+)"
+            ]
+            
+            var textToProcess = text
+            
+            for pattern in patterns {
+                if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                    let range = NSRange(textToProcess.startIndex..., in: textToProcess)
+                    let matches = regex.matches(in: textToProcess, options: [], range: range)
+                    
+                    for match in matches.reversed() {
+                        if match.numberOfRanges >= 2,
+                           let videoIDRange = Range(match.range(at: 1), in: textToProcess),
+                           let fullMatchRange = Range(match.range, in: textToProcess) {
+                            let videoID = String(textToProcess[videoIDRange])
+                            
+                            // If there's text before the link, add it
+                            let beforeLink = textToProcess[..<fullMatchRange.lowerBound]
+                            if !beforeLink.isEmpty {
+                                result.append((type: "text", content: String(beforeLink)))
+                            }
+                            
+                            // Add the video
+                            result.append((type: "youtube", content: videoID))
+                            
+                            // Update text to process (only keep what's after this link)
+                            textToProcess = String(textToProcess[fullMatchRange.upperBound...])
+                        }
+                    }
+                }
+            }
+            
+            // Add any remaining text
+            if !textToProcess.isEmpty {
+                result.append((type: "text", content: textToProcess))
+            }
+        }
+        
+        // If we still have no results, just add the whole text
+        if result.isEmpty {
             result.append((type: "text", content: remainingText))
         }
         
@@ -56,74 +100,83 @@ struct MessageBubble: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
-                if isFromUser {
+            if !isFromUser {
+                // System message (AI)
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Display parsed content
+                        ForEach(Array(parsedContent.enumerated()), id: \.offset) { index, item in
+                            if item.type == "text" {
+                                // Simply clean the markdown symbols without trying to render them
+                                Text(MarkdownCleaner.cleanMarkdown(item.content))
+                                    .font(HitCraftFonts.body())
+                                    .foregroundColor(HitCraftColors.text)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            } else if item.type == "youtube" {
+                                YouTubeVideoView(videoID: item.content)
+                                    .frame(height: 220)
+                                    .cornerRadius(12)
+                                    .padding(.vertical, 4)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Spacer(minLength: 32)
+                }
+                .padding(HitCraftLayout.messagePadding)
+                .frame(maxWidth: .infinity)
+                .background(HitCraftColors.systemMessageBackground)
+                .overlay(
+                    HStack(spacing: 0) {
+                        // Left pink border
+                        VStack(spacing: 0) {
+                            // Top extension
+                            Rectangle()
+                                .fill(HitCraftColors.accent)
+                                .frame(width: 5, height: 2)
+                                .offset(x: 0)
+                            
+                            // Vertical line
+                            Rectangle()
+                                .fill(HitCraftColors.accent)
+                                .frame(width: 2)
+                                .frame(maxHeight: .infinity)
+                            
+                            // Bottom extension
+                            Rectangle()
+                                .fill(HitCraftColors.accent)
+                                .frame(width: 5, height: 2)
+                                .offset(x: 0)
+                        }
+                        .padding(.vertical, 0)
+                        
+                        Spacer()
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: HitCraftLayout.messageBubbleRadius))
+                .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
+            } else {
+                // User message
+                HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "person.circle.fill")
                         .resizable()
                         .frame(width: 32, height: 32)
                         .foregroundColor(Color.gray.opacity(0.7))
+                    
+                    Text(text)
+                        .font(HitCraftFonts.body())
+                        .foregroundColor(HitCraftColors.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    // Display parsed content
-                    ForEach(Array(parsedContent.enumerated()), id: \.offset) { index, item in
-                        if item.type == "text" {
-                            // Simply clean the markdown symbols without trying to render them
-                            Text(MarkdownCleaner.cleanMarkdown(item.content))
-                                .font(HitCraftFonts.body())
-                                .foregroundColor(HitCraftColors.text)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        } else if item.type == "youtube" {
-                            YouTubeVideoView(videoID: item.content)
-                                .frame(height: 220)
-                                .cornerRadius(12)
-                                .padding(.vertical, 4)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                if !isFromUser {
-                    Spacer(minLength: 32)
-                }
+                .padding(HitCraftLayout.messagePadding)
+                .frame(maxWidth: .infinity)
+                .background(HitCraftColors.userMessageBackground)
+                .clipShape(RoundedRectangle(cornerRadius: HitCraftLayout.messageBubbleRadius))
+                .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
             }
-            .padding(HitCraftLayout.messagePadding)
-            .frame(maxWidth: .infinity)
-            .background(isFromUser ? HitCraftColors.userMessageBackground : HitCraftColors.systemMessageBackground)
-            .overlay(
-                Group {
-                    if !isFromUser {
-                        HStack(spacing: 0) {
-                            // Left pink border
-                            VStack(spacing: 0) {
-                                // Top extension
-                                Rectangle()
-                                    .fill(HitCraftColors.accent)
-                                    .frame(width: 5, height: 2)
-                                    .offset(x: 0)
-                                
-                                // Vertical line
-                                Rectangle()
-                                    .fill(HitCraftColors.accent)
-                                    .frame(width: 2)
-                                    .frame(maxHeight: .infinity)
-                                
-                                // Bottom extension
-                                Rectangle()
-                                    .fill(HitCraftColors.accent)
-                                    .frame(width: 5, height: 2)
-                                    .offset(x: 0)
-                            }
-                            .padding(.vertical, 0)
-                            
-                            Spacer()
-                        }
-                    }
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: HitCraftLayout.messageBubbleRadius))
-            .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
         }
         .padding(.horizontal, 8)
         .transition(.opacity.combined(with: .scale(scale: 0.98)))
@@ -145,6 +198,10 @@ struct YouTubeVideoView: UIViewRepresentable {
         let preferences = WKWebpagePreferences()
         preferences.allowsContentJavaScript = true
         webView.configuration.defaultWebpagePreferences = preferences
+        
+        // YouTube videos must use an https URL to load in the app
+        webView.configuration.allowsInlineMediaPlayback = true
+        webView.configuration.mediaTypesRequiringUserActionForPlayback = []
         
         return webView
     }

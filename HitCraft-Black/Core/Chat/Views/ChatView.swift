@@ -8,7 +8,6 @@ struct ChatView: View {
     @State private var error: HCNetwork.Error?
     @State private var showError = false
     @State private var isLoadingMessages = false
-    @State private var scrollViewProxy: ScrollViewProxy? = nil
     @State private var keyboardHeight: CGFloat = 0
     @State private var bottomPadding: CGFloat = 80
     
@@ -77,7 +76,7 @@ struct ChatView: View {
                                     text: message.text,
                                     associatedMessage: message
                                 )
-                                .id(message.id)
+                                .id(message.id.uuidString)
                                 .transition(.asymmetric(
                                     insertion: .scale(scale: 0.98).combined(with: .opacity),
                                     removal: .opacity
@@ -106,41 +105,41 @@ struct ChatView: View {
                     .padding(.vertical, 16)
                     .padding(.bottom, showInputField ? 0 : 16)
                 }
-                .onChange(of: chatManager.messages.count) { _ in
-                    scrollToBottom(proxy: proxy, animated: true)
-                }
-                .onChange(of: chatManager.isTyping) { newValue in
-                    if newValue {
-                        scrollToTypingIndicator(proxy: proxy)
+                .onChange(of: chatManager.scrollTrigger) { _ in
+                    // When ChatPersistenceManager triggers a scroll
+                    if let targetId = chatManager.scrollTarget {
+                        print("🔄 Scrolling to: \(targetId) with anchor: \(chatManager.scrollAnchor)")
+                        
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            proxy.scrollTo(targetId, anchor: chatManager.scrollAnchor)
+                        }
+                        
+                        // Double-check scroll after a delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            proxy.scrollTo(targetId, anchor: chatManager.scrollAnchor)
+                        }
                     }
                 }
                 .onAppear {
-                    self.scrollViewProxy = proxy
-                    
                     // Initialize chat if needed
                     if !chatManager.isInitialized {
                         Task {
                             isLoadingMessages = true
                             await chatManager.initializeChat(artistId: artistId)
                             isLoadingMessages = false
-                            
-                            // After messages load, scroll to bottom
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                scrollToBottom(proxy: proxy, animated: true)
-                            }
                         }
                     } else {
-                        // If already initialized, just scroll to the bottom
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            scrollToBottom(proxy: proxy, animated: true)
-                        }
+                        // If already initialized, trigger scroll to bottom
+                        chatManager.triggerScrollToBottom()
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
                     if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
                         self.keyboardHeight = keyboardFrame.height
+                        
+                        // When keyboard appears, scroll to maintain visibility
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            scrollToBottom(proxy: proxy, animated: true)
+                            chatManager.triggerScrollToBottom()
                         }
                     }
                 }
@@ -180,36 +179,6 @@ struct ChatView: View {
         } message: {
             Text(error?.localizedDescription ?? "An error occurred")
                 .foregroundColor(HitCraftColors.text)
-        }
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {
-        if animated {
-            withAnimation(.easeOut(duration: 0.3)) {
-                if let lastMessage = chatManager.messages.last {
-                    proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                } else if chatManager.isTyping {
-                    proxy.scrollTo("typingIndicator", anchor: .bottom)
-                } else {
-                    proxy.scrollTo("bottomSpacer", anchor: .bottom)
-                }
-            }
-        } else {
-            if let lastMessage = chatManager.messages.last {
-                proxy.scrollTo(lastMessage.id, anchor: .bottom)
-            } else if chatManager.isTyping {
-                proxy.scrollTo("typingIndicator", anchor: .bottom)
-            } else {
-                proxy.scrollTo("bottomSpacer", anchor: .bottom)
-            }
-        }
-    }
-    
-    private func scrollToTypingIndicator(proxy: ScrollViewProxy) {
-        withAnimation(.easeOut(duration: 0.3)) {
-            proxy.scrollTo("typingIndicator", anchor: .bottom)
         }
     }
     

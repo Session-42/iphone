@@ -16,6 +16,11 @@ class ChatPersistenceManager: ObservableObject {
     @Published var hasActiveChat: Bool = false
     @Published var isTyping: Bool = false
     
+    // NEW: Scroll control variables
+    @Published var scrollTarget: String? = nil  // ID to scroll to
+    @Published var scrollAnchor: UnitPoint = .bottom // Anchor point for scroll
+    @Published var scrollTrigger: UUID = UUID() // Change this to force a scroll
+    
     // Chat service instance
     private let chatService = ChatService.shared
     
@@ -50,6 +55,9 @@ class ChatPersistenceManager: ObservableObject {
             self.messages = [welcomeMessage, message]
             self.isInitialized = true
             self.hasActiveChat = true
+            
+            // Trigger initial scroll to bottom
+            triggerScrollToBottom()
         } catch {
             print("Error initializing chat: \(error.localizedDescription)")
             // Set as initialized anyway to prevent continuous retries
@@ -69,7 +77,31 @@ class ChatPersistenceManager: ObservableObject {
         
         // Add user message
         messages.append(userMessage)
-        isTyping = true
+        
+        // First, create a custom spacer height to push the message up higher in the view
+        // to leave room for the typing indicator - using a much higher position now
+        // Create a custom anchor to position the message with just a little padding
+        scrollAnchor = UnitPoint(x: 0.5, y: 0.88) // 0.88 gives a small amount of space
+        
+        // Immediately trigger scroll to show the user message with extra space below
+        triggerScrollTo(id: userMessage.id.uuidString, anchor: scrollAnchor)
+        
+        // IMPORTANT: Show typing indicator ONLY AFTER the first scroll completes
+        // This is crucial to prevent the typing indicator from appearing too soon
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            
+            // Now set typing state
+            self.isTyping = true
+            
+            // After typing indicator appears, make sure it's visible and the message remains visible
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                guard let self = self else { return }
+                
+                // Use the same high anchor point to keep message visible with typing indicator
+                self.triggerScrollTo(id: userMessage.id.uuidString, anchor: self.scrollAnchor)
+            }
+        }
         
         do {
             // Add a small delay for natural feel
@@ -81,17 +113,75 @@ class ChatPersistenceManager: ObservableObject {
                 artistId: artistId
             )
             
-            // Hide typing indicator
-            isTyping = false
-            
-            // Short pause before showing the response
-            try await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
-            
-            // Add the response message
-            messages.append(responseMessage)
+            // Short pause before hiding typing indicator
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                
+                // Hide typing indicator
+                self.isTyping = false
+                
+                // IMPORTANT: Instead of showing response after delay, add it immediately
+                // This prevents the unwanted scrolling motion between typing and response
+                self.messages.append(responseMessage)
+                
+                // Determine if it's a long message to adjust scroll behavior
+                let isLongResponse = responseMessage.content.count > 300
+                let anchor: UnitPoint = isLongResponse ? .top : .bottom
+                
+                // Trigger scroll to the new message with proper anchor
+                self.triggerScrollTo(id: responseMessage.id.uuidString, anchor: anchor)
+            }
         } catch {
             print("Error sending message: \(error.localizedDescription)")
             isTyping = false
+        }
+    }
+    
+    // MARK: - Scroll Control Methods
+    
+    // Trigger a scroll to a specific ID
+    func triggerScrollTo(id: String, anchor: UnitPoint) {
+        scrollTarget = id
+        scrollAnchor = anchor
+        scrollTrigger = UUID() // Change this to force observers to react
+        
+        // Double-check scroll with delay to ensure it takes effect
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self = self else { return }
+            // Only update the trigger to avoid changing the target
+            self.scrollTrigger = UUID()
+        }
+        
+        // Triple-check with longer delay for reliable scrolling
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            guard let self = self else { return }
+            self.scrollTrigger = UUID()
+        }
+    }
+    
+    // Trigger scroll to bottom
+    func triggerScrollToBottom() {
+        if let lastMessage = messages.last {
+            triggerScrollTo(id: lastMessage.id.uuidString, anchor: .bottom)
+        } else {
+            // Scroll to bottom spacer if no messages
+            scrollTarget = "bottomSpacer"
+            scrollAnchor = .bottom
+            scrollTrigger = UUID()
+        }
+    }
+    
+    // Trigger scroll to typing indicator
+    func triggerScrollToTypingIndicator() {
+        scrollTarget = "typingIndicator"
+        scrollAnchor = .bottom
+        scrollTrigger = UUID()
+        
+        // Double-check scroll with delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self = self else { return }
+            // Only update the trigger to avoid changing the target
+            self.scrollTrigger = UUID()
         }
     }
     
@@ -127,6 +217,9 @@ class ChatPersistenceManager: ObservableObject {
             isTyping = false
             isInitialized = true
             hasActiveChat = true
+            
+            // Scroll to the latest message
+            triggerScrollToBottom()
             
             // Post notification that messages are loaded
             NotificationCenter.default.post(name: NSNotification.Name("ChatThreadLoaded"), object: nil)
