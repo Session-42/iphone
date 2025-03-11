@@ -15,7 +15,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		7AEE5C432D7B66D00019EE99 /* Exceptions for "HitCraft-Black" folder in "HitCraft-Black" target */ = {
+		7470026C2D80410000821E3E /* Exceptions for "HitCraft-Black" folder in "HitCraft-Black" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -28,7 +28,7 @@
 		7AF297182D7B42FB00FE0C92 /* HitCraft-Black */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				7AEE5C432D7B66D00019EE99 /* Exceptions for "HitCraft-Black" folder in "HitCraft-Black" target */,
+				7470026C2D80410000821E3E /* Exceptions for "HitCraft-Black" folder in "HitCraft-Black" target */,
 			);
 			path = "HitCraft-Black";
 			sourceTree = "<group>";
@@ -278,7 +278,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "HitCraft-Black/Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -309,7 +308,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "HitCraft-Black/Info.plist";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

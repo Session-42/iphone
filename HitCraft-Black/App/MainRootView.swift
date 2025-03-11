@@ -5,55 +5,26 @@ import SwiftUI
 struct MainRootView: View {
     @EnvironmentObject private var authService: HCAuthService
     @EnvironmentObject private var themeManager: ThemeManager
-    @ObservedObject private var chatManager = ChatPersistenceManager.shared
-    @State private var defaultArtist = ArtistProfile.sample
     @State private var selectedTab: MenuTab = .chat
-    @State private var error: Error?
-    @State private var showError = false
-    @State private var messageText = ""
+    @State private var defaultArtist = ArtistProfile.sample
     
     var body: some View {
         VStack(spacing: 0) {
             // Main Content based on selected tab
             mainContentView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                // Add negative padding if in chat tab to create overlap
-                .padding(.bottom, selectedTab == .chat ? -16 : 0)
             
-            // For chat tab, include the chat input directly before the menu bar
-            if selectedTab == .chat {
-                // Custom Input Bar with embedded send button
-                ChatInput(
-                    text: $messageText,
-                    placeholder: "Type your message...",
-                    isTyping: chatManager.isTyping,
-                    onSend: {
-                        // Pass the send action to the ChatView
-                        NotificationCenter.default.post(name: NSNotification.Name("SendChatMessage"), object: messageText)
-                        messageText = ""
-                    }
-                )
-            }
-            
-            // Bottom Menu Bar - no spacing between this and the input above
-            BottomMenuBar(selectedTab: $selectedTab, onStartNewChat: {
-                // Clear chat data to start fresh
-                chatManager.clearChat()
+            // Bottom Menu Bar
+            BottomMenuBar(selectedTab: $selectedTab) {
                 selectedTab = .chat
-                // Notify chat view to refresh
                 NotificationCenter.default.post(name: NSNotification.Name("RefreshChat"), object: nil)
-            })
+            }
         }
-        .edgesIgnoringSafeArea(.bottom) // Extend to the bottom edge
+        .edgesIgnoringSafeArea(.bottom)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
             if let tab = notification.userInfo?["tab"] as? MenuTab {
                 selectedTab = tab
             }
-        }
-        .alert("Error", isPresented: $showError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(error?.localizedDescription ?? "An error occurred")
         }
     }
     
@@ -63,8 +34,7 @@ struct MainRootView: View {
         case .history:
             HistoryView()
         case .chat:
-            // Use the regular ChatView but with showInputField set to false
-            ChatView(artistId: defaultArtist.id, showInputField: false)
+            ChatView()
         case .productions:
             ProductionsView()
         case .settings:

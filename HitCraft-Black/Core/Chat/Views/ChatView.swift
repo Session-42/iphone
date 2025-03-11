@@ -11,8 +11,9 @@ struct ChatView: View {
     @State private var keyboardHeight: CGFloat = 0
     @State private var bottomPadding: CGFloat = 80
     
-    let artistId: String
-    var showInputField: Bool = true
+    // Hardcoded values instead of parameters
+    private let artistId = ArtistProfile.sample.id
+    private let showInputField = true
     
     var body: some View {
         VStack(spacing: 0) {
@@ -198,7 +199,7 @@ struct ChatView: View {
         
         // Use the persistence manager to send the message
         Task {
-            await chatManager.sendMessage(text: text, artistId: artistId)
+            await chatManager.sendMessage(text: text)
         }
     }
 }
