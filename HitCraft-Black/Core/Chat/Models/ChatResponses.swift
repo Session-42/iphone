@@ -14,6 +14,10 @@ struct MessageResponse: Codable {
     let message: MessageData
 }
 
+struct MessagesResponse: Codable {
+    let messages: [MessageData]
+}
+
 struct MessageData: Codable {
     let content: [MessageContent]
     let timestamp: String

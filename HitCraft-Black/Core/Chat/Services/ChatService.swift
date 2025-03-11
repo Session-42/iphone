@@ -80,6 +80,22 @@ final class ChatService {
         }
     }
     
+    /// List messages for a specific chat thread
+    func listMessages(threadId: String) async throws -> MessagesResponse {
+        do {
+            let path = HCNetwork.Endpoints.chatMessages(threadId: threadId)
+            print("📍 Listing messages for thread: \(threadId)")
+            let response: MessagesResponse = try await apiClient.get(path: path)
+            return response
+        } catch HCNetwork.Error.unauthorized {
+            await HCAuthService.shared.logout()
+            throw HCNetwork.Error.unauthorized
+        } catch {
+            print("Error listing messages: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
     private func parseChatMessageResponse(_ response: MessageResponse) throws -> ChatMessage {
         let messageData = response.message
         let content = messageData.content.first

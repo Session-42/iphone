@@ -168,35 +168,56 @@ class ChatPersistenceManager: ObservableObject {
         hasActiveChat = false
     }
     
-    // Method to prepare loading a specific chat thread
-    func prepareToLoadChatThread(threadId: String, title: String) {
-        // Clear any existing messages
-        messages = []
-        isInitialized = false
-        hasActiveChat = false
-        
-        // Set the active thread ID
-        self.threadId = threadId
-        
-        // Show loading state briefly
-        isTyping = true
-        
-        // Load chat thread with a simulated delay for better UX
-        Task {
-            try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
-            
-            // Generate continuation messages
+    func prepareToLoadChatThread(threadId: String) {
+            // Clear any existing messages
             messages = []
-            
-            isTyping = false
-            isInitialized = true
-            hasActiveChat = true
-            
-            // Scroll to the latest message
-            triggerScrollToBottom()
-            
-            // Post notification that messages are loaded
-            NotificationCenter.default.post(name: NSNotification.Name("ChatThreadLoaded"), object: nil)
+        
+            // Set the active thread ID
+            self.threadId = threadId
+        
+            // Show loading state briefly
+            isTyping = true
+        
+            Task {
+                do {
+                    let response = try await ChatService.shared.listMessages(threadId: threadId)
+        
+                    // Convert API messages to ChatMessage objects
+                    messages = response.messages.map { messageData in
+                        let content = messageData.content
+                            .filter { $0.type == "text" }
+                            .map { $0.text }
+                            .joined(separator: "\n")
+                        let type = messageData.content.first?.format == "markdown" ? "markdown" : "text"
+        
+                        // Parse timestamp
+                        let formatter = ISO8601DateFormatter()
+                        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                        let date = formatter.date(from: messageData.timestamp) ?? Date()
+        
+                        return ChatMessage(
+                            content: content,
+                            sender: messageData.role,
+                            type: type,
+                            timestamp: date
+                        )
+                    }
+        
+                    print("Messages loaded: \(messages.count)")
+                    isTyping = false
+                    isInitialized = true
+                    hasActiveChat = true
+        
+                    // Scroll to the latest message
+                    triggerScrollToBottom()
+        
+                    // Post notification that messages are loaded
+                    NotificationCenter.default.post(name: NSNotification.Name("ChatThreadLoaded"), object: nil)
+        
+                } catch {
+                    print("Error loading messages: \(error)")
+                    isTyping = false
+                }
+            }
         }
     }
-}

@@ -19,6 +19,7 @@ private struct ChatListItem: View {
     let thread: ChatThread
     let isExpanded: Bool
     let onTap: () -> Void
+    let chatManager: ChatPersistenceManager
     
     var body: some View {
         HCChatHistoryCard(
@@ -26,7 +27,16 @@ private struct ChatListItem: View {
             isExpanded: isExpanded,
             onTap: onTap,
             onLoadChat: {
-                print("Loading chat for thread: \(thread.id)")
+                Task {
+                    await chatManager.prepareToLoadChatThread(threadId: thread.id)
+                    
+                    // Switch to chat tab
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("SwitchToTab"),
+                        object: nil,
+                        userInfo: ["tab": MenuTab.chat]
+                    )
+                }
             }
         )
     }
@@ -37,6 +47,7 @@ private struct ChatListView: View {
     let threads: [ChatThread]
     let expandedCardId: String?
     let onCardTap: (ChatThread) -> Void
+    let chatManager: ChatPersistenceManager
     
     var body: some View {
         ScrollView {
@@ -45,7 +56,8 @@ private struct ChatListView: View {
                     ChatListItem(
                         thread: thread,
                         isExpanded: expandedCardId == thread.id,
-                        onTap: { onCardTap(thread) }
+                        onTap: { onCardTap(thread) },
+                        chatManager: chatManager
                     )
                 }
             }
@@ -78,7 +90,8 @@ struct HistoryView: View {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             expandedCardId = expandedCardId == thread.id ? nil : thread.id
                         }
-                    }
+                    },
+                    chatManager: chatManager
                 )
                 .refreshable {
                     await viewModel.refreshChatThreads()
