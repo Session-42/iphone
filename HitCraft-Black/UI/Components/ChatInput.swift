@@ -10,6 +10,9 @@ struct ChatInput: View {
     @State private var textViewHeight: CGFloat = 36
     private let maxHeight: CGFloat = 120 // Maximum height before scrolling
     
+    // Reference to UITextView for dismissing keyboard
+    @State private var textViewRef: UITextView?
+    
     // Button color
     private var sendButtonColor: Color {
         if text.isEmpty || isTyping {
@@ -38,7 +41,7 @@ struct ChatInput: View {
                     }
                     
                     // The actual text editor for expandable input
-                    UITextViewWrapper(text: $text, height: $textViewHeight, maxHeight: maxHeight)
+                    UITextViewWrapper(text: $text, height: $textViewHeight, maxHeight: maxHeight, textViewRef: $textViewRef)
                         .frame(height: min(textViewHeight, maxHeight))
                         .padding(.vertical, 2)
                 }
@@ -47,7 +50,10 @@ struct ChatInput: View {
                 .padding(.trailing, 0) // No extra padding here
                 
                 // Send button with gradient border when active
-                Button(action: onSend) {
+                Button(action: {
+                    onSend()
+                    dismissKeyboard()
+                }) {
                     Image(systemName: "arrow.up")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(sendButtonColor)
@@ -83,6 +89,11 @@ struct ChatInput: View {
         .padding(.top, -16)
         .zIndex(1)
     }
+    
+    // Function to dismiss the keyboard
+    private func dismissKeyboard() {
+        textViewRef?.resignFirstResponder()
+    }
 }
 
 // UITextView wrapper to get auto-expanding behavior while maintaining styling
@@ -90,6 +101,7 @@ struct UITextViewWrapper: UIViewRepresentable {
     @Binding var text: String
     @Binding var height: CGFloat
     let maxHeight: CGFloat
+    @Binding var textViewRef: UITextView?
     
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
@@ -132,6 +144,11 @@ struct UITextViewWrapper: UIViewRepresentable {
             ]
         }
         
+        // Store the reference
+        DispatchQueue.main.async {
+            self.textViewRef = textView
+        }
+        
         return textView
     }
     
@@ -139,6 +156,11 @@ struct UITextViewWrapper: UIViewRepresentable {
         if uiView.text != text {
             uiView.text = text
             recalculateHeight(view: uiView)
+        }
+        
+        // Update textViewRef if needed
+        if textViewRef == nil {
+            textViewRef = uiView
         }
     }
     
@@ -168,17 +190,4 @@ struct UITextViewWrapper: UIViewRepresentable {
             parent.recalculateHeight(view: textView)
         }
     }
-}
-
-#Preview {
-    VStack {
-        Spacer()
-        ChatInput(
-            text: .constant(""),
-            placeholder: "Type your message...",
-            isTyping: false,
-            onSend: {}
-        )
-    }
-    .background(HitCraftColors.chatBackground)
 }

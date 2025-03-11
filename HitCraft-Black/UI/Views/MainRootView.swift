@@ -11,6 +11,7 @@ struct MainRootView: View {
     @State private var error: Error?
     @State private var showError = false
     @State private var messageText = ""
+    @State private var keyboardHeight: CGFloat = 0
     
     var body: some View {
         VStack(spacing: 0) {
@@ -33,18 +34,31 @@ struct MainRootView: View {
                         messageText = ""
                     }
                 )
+                .padding(.bottom, keyboardHeight > 0 ? keyboardHeight - 8 : 0)
+                .animation(.easeOut(duration: 0.25), value: keyboardHeight)
             }
             
             // Bottom Menu Bar - no spacing between this and the input above
-            BottomMenuBar(selectedTab: $selectedTab, onStartNewChat: {
-                // Clear chat data to start fresh
-                chatManager.clearChat()
-                selectedTab = .chat
-                // Notify chat view to refresh
-                NotificationCenter.default.post(name: NSNotification.Name("RefreshChat"), object: nil)
-            })
+            // Only show menu bar when keyboard is not visible
+            if keyboardHeight == 0 {
+                BottomMenuBar(selectedTab: $selectedTab, onStartNewChat: {
+                    // Clear chat data to start fresh
+                    chatManager.clearChat()
+                    selectedTab = .chat
+                    // Notify chat view to refresh
+                    NotificationCenter.default.post(name: NSNotification.Name("RefreshChat"), object: nil)
+                })
+            }
         }
         .edgesIgnoringSafeArea(.bottom) // Extend to the bottom edge
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+            if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                self.keyboardHeight = keyboardFrame.height
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            self.keyboardHeight = 0
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
             if let tab = notification.userInfo?["tab"] as? MenuTab {
                 selectedTab = tab

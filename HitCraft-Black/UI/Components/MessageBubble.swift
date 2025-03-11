@@ -118,6 +118,7 @@ struct MessageBubble: View {
                                     .foregroundColor(HitCraftColors.text)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.trailing, 0) // Remove any trailing padding to ensure equal padding
                             } else if item.type == "youtube" {
                                 YouTubeVideoView(videoID: item.content)
                                     .frame(height: 220)
@@ -128,7 +129,8 @@ struct MessageBubble: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    Spacer(minLength: 32)
+                    // Remove the spacer that was causing extra right padding
+                    // Spacer(minLength: 32) - REMOVED
                 }
                 .padding(HitCraftLayout.messagePadding)
                 .frame(maxWidth: .infinity)
@@ -202,41 +204,43 @@ struct YouTubeVideoView: UIViewRepresentable {
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
         
-        // Set content mode to mobile to make sure it works properly
+        // Enhanced configuration for YouTube
+        let configuration = webView.configuration
+        configuration.allowsInlineMediaPlayback = true
+        configuration.mediaTypesRequiringUserActionForPlayback = []
+        
         let preferences = WKWebpagePreferences()
         preferences.allowsContentJavaScript = true
-        webView.configuration.defaultWebpagePreferences = preferences
-        
-        // YouTube videos must use an https URL to load in the app
-        webView.configuration.allowsInlineMediaPlayback = true
-        webView.configuration.mediaTypesRequiringUserActionForPlayback = []
+        configuration.defaultWebpagePreferences = preferences
         
         return webView
     }
     
     func updateUIView(_ uiView: WKWebView, context: Context) {
-        // Build a custom HTML page for embedding YouTube
+        // Enhanced HTML to ensure proper playback and prevent "Video Unavailable" errors
         let embedHTML = """
         <!DOCTYPE html>
         <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           <style>
-            body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background-color: transparent; }
-            .video-container { position: relative; width: 100%; height: 100%; }
-            iframe { width: 100%; height: 100%; border: none; border-radius: 12px; }
+            body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background-color: #000; }
+            .video-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+            iframe { width: 100%; height: 100%; border: none; border-radius: 12px; background-color: #000; }
           </style>
         </head>
         <body>
           <div class="video-container">
-            <iframe src="https://www.youtube.com/embed/\(videoID)?playsinline=1&rel=0&modestbranding=1" 
-                    frameborder="0" allowfullscreen allow="autoplay; encrypted-media">
+            <iframe src="https://www.youtube.com/embed/\(videoID)?playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://hitcraft.ai" 
+                    frameborder="0" 
+                    allowfullscreen 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
             </iframe>
           </div>
         </body>
         </html>
         """
         
-        uiView.loadHTMLString(embedHTML, baseURL: nil)
+        uiView.loadHTMLString(embedHTML, baseURL: URL(string: "https://www.youtube.com"))
     }
 }
