@@ -18,7 +18,6 @@ final class ChatService {
     
     // MARK: - Public Methods
     func createChat(artistId: String) async throws -> String {
-        // If we already have an active thread ID, return it
         if let activeThreadId = self.activeThreadId,
            !activeThreadId.hasPrefix("mock-thread-") ||
             !activeThreadId.hasPrefix("sample-thread-") {
@@ -26,8 +25,8 @@ final class ChatService {
         }
         
         do {
-            // Create a chat thread
-            let path = HCNetwork.Environment.Endpoint.createChat()
+            // Update endpoint path
+            let path = HCNetwork.Endpoints.createChat()
             
             let body: [String: Any] = [
                 "artistId": artistId
@@ -48,13 +47,11 @@ final class ChatService {
             self.activeThreadId = threadId
             return threadId
         } catch HCNetwork.Error.unauthorized {
-            // For unauthorized error, trigger logout
             await HCAuthService.shared.logout()
             throw HCNetwork.Error.unauthorized
         } catch {
             print("Error creating chat: \(error.localizedDescription)")
             
-            // For development/fallback, use a mock thread ID
             let mockThreadId = "mock-thread-\(UUID().uuidString.prefix(8))"
             self.activeThreadId = mockThreadId
             return mockThreadId
@@ -62,20 +59,16 @@ final class ChatService {
     }
     
     func sendMessage(text: String, artistId: String) async throws -> ChatMessage {
-        // Check if we have a thread ID first
         let threadId: String
         if let existingThreadId = self.activeThreadId {
             threadId = existingThreadId
         } else {
-            // Create a new thread if we don't have one
             threadId = try await createChat(artistId: artistId)
         }
         
-        // Check if we have a mock thread ID and should return a mock response
         if threadId.hasPrefix("mock-thread-") || threadId.hasPrefix("sample-thread-") {
             let mockResponse = generateMockChatMessage(for: text)
             
-            // Cache the message
             if messageCache[threadId] == nil {
                 messageCache[threadId] = []
             }
@@ -85,8 +78,8 @@ final class ChatService {
         }
         
         do {
-            // Send message to the thread
-            let path = HCNetwork.Environment.Endpoint.chatMessages(threadId: threadId)
+            // Update endpoint path
+            let path = HCNetwork.Endpoints.chatMessages(threadId: threadId)
             
             let fragment: [String: Any] = [
                 "text": text,
@@ -104,10 +97,8 @@ final class ChatService {
                 body: body
             )
             
-            // Parse the response
             let chatMessage = try parseChatMessageResponse(response)
             
-            // Cache the message
             if messageCache[threadId] == nil {
                 messageCache[threadId] = []
             }
@@ -115,7 +106,6 @@ final class ChatService {
             
             return chatMessage
         } catch HCNetwork.Error.unauthorized {
-            // For unauthorized errors, trigger logout
             await HCAuthService.shared.logout()
             
             return ChatMessage(
@@ -126,10 +116,8 @@ final class ChatService {
         } catch {
             print("Error sending message: \(error.localizedDescription)")
             
-            // Return a mock response for development/testing
             let mockResponse = generateMockChatMessage(for: text)
             
-            // Cache the message
             if messageCache[threadId] == nil {
                 messageCache[threadId] = []
             }

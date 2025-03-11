@@ -15,9 +15,11 @@ final class NetworkLogger {
     }
     
     func log(response: URLResponse?, data: Data?) {
-        guard isDebugMode, let httpResponse = response as? HTTPURLResponse else { return }
+        guard isDebugMode,
+              let httpResponse = response as? HTTPURLResponse else { return }
         print("📡 Response Status: \(httpResponse.statusCode)")
-        if let data = data, let responseString = String(data: data, encoding: .utf8) {
+        if let data = data,
+           let responseString = String(data: data, encoding: .utf8) {
             let preview = responseString.count > 500 ? String(responseString.prefix(500)) + "..." : responseString
             print("📄 Response Data: \(preview)")
         }

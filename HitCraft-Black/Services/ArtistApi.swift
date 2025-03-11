@@ -18,7 +18,7 @@ final class ArtistApi {
     func list() async throws -> [ArtistProfile] {
         do {
             let response: ArtistsResponse = try await apiClient.get(
-                path: HCNetwork.Environment.Endpoint.artists
+                path: HCNetwork.Endpoints.artists
             )
             return response.artists.values.sorted { $0.name < $1.name }
         } catch {
@@ -31,7 +31,7 @@ final class ArtistApi {
     func get(artistId: String) async throws -> ArtistProfile {
         do {
             return try await apiClient.get(
-                path: HCNetwork.Environment.Endpoint.artist(artistId)
+                path: HCNetwork.Endpoints.artist(artistId)
             )
         } catch {
             print("Error fetching artist with ID \(artistId): \(error)")

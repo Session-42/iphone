@@ -3,6 +3,9 @@
 import Foundation
 import DescopeKit
 
+// Make sure ApiClient has access to all network components
+typealias HCError = HCNetwork.Error
+
 @MainActor
 final class ApiClient {
     // MARK: - Properties
@@ -11,6 +14,7 @@ final class ApiClient {
     private let urlSession: URLSession
     private let decoder: JSONDecoder
     private let timeoutInterval: TimeInterval = 30
+    private let logger = NetworkLogger()
     
     // MARK: - Initialization
     private init() {
@@ -41,7 +45,7 @@ final class ApiClient {
     // MARK: - Private Request Methods
     private func request<T: Codable>(path: String, method: String, body: [String: Any]? = nil) async throws -> T {
         let fullURL = HCNetwork.Environment.apiBaseURL + path
-        print("🚀 \(method) \(fullURL)")
+        logger.log(request: fullURL, method: method, body: body)
         
         guard let url = URL(string: fullURL) else {
             throw HCNetwork.Error.invalidURL
@@ -54,7 +58,6 @@ final class ApiClient {
         // Set standard headers
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue(HCNetwork.Environment.webAppURL, forHTTPHeaderField: "Origin")
         
         do {
             // Add authentication headers
@@ -63,20 +66,14 @@ final class ApiClient {
             // Set request body for POST/PUT methods
             if let body = body, (method == "POST" || method == "PUT") {
                 request.httpBody = try JSONSerialization.data(withJSONObject: body)
-                print("📦 Request Body: \(body)")
             }
             
             // Perform the request
             let (data, response) = try await urlSession.data(for: request)
+            logger.log(response: response, data: data)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw HCNetwork.Error.networkError(NSError(domain: "ApiClient", code: -1))
-            }
-            
-            print("📡 Response Status: \(httpResponse.statusCode)")
-            if let responseString = String(data: data, encoding: .utf8) {
-                let preview = responseString.count > 500 ? String(responseString.prefix(500)) + "..." : responseString
-                print("📄 Response Data: \(preview)")
             }
             
             // Handle response based on status code
@@ -92,7 +89,7 @@ final class ApiClient {
                     // Try to decode as the expected type
                     return try decoder.decode(T.self, from: data)
                 } catch {
-                    print("❌ Decoding error: \(error)")
+                    logger.log(error: error)
                     throw HCNetwork.Error.decodingError(error)
                 }
             case 401, 403:
@@ -108,14 +105,14 @@ final class ApiClient {
         } catch let error as HCNetwork.Error {
             throw error
         } catch {
-            print("❌ Error: \(error.localizedDescription)")
+            logger.log(error: error)
             throw HCNetwork.Error.networkError(error)
         }
     }
     
     private func requestAnyResponse(path: String, method: String, body: [String: Any]? = nil) async throws -> [String: Any] {
         let fullURL = HCNetwork.Environment.apiBaseURL + path
-        print("🚀 \(method) \(fullURL)")
+        logger.log(request: fullURL, method: method, body: body)
         
         guard let url = URL(string: fullURL) else {
             throw HCNetwork.Error.invalidURL
@@ -128,7 +125,6 @@ final class ApiClient {
         // Set standard headers
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue(HCNetwork.Environment.webAppURL, forHTTPHeaderField: "Origin")
         
         do {
             // Add authentication headers
@@ -137,20 +133,14 @@ final class ApiClient {
             // Set request body for POST/PUT methods
             if let body = body, (method == "POST" || method == "PUT") {
                 request.httpBody = try JSONSerialization.data(withJSONObject: body)
-                print("📦 Request Body: \(body)")
             }
             
             // Perform the request
             let (data, response) = try await urlSession.data(for: request)
+            logger.log(response: response, data: data)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw HCNetwork.Error.networkError(NSError(domain: "ApiClient", code: -1))
-            }
-            
-            print("📡 Response Status: \(httpResponse.statusCode)")
-            if let responseString = String(data: data, encoding: .utf8) {
-                let preview = responseString.count > 500 ? String(responseString.prefix(500)) + "..." : responseString
-                print("📄 Response Data: \(preview)")
             }
             
             // Handle response based on status code
@@ -168,7 +158,7 @@ final class ApiClient {
                         throw HCNetwork.Error.decodingError(NSError(domain: "Decoding", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to decode response"]))
                     }
                 } catch {
-                    print("❌ Decoding error: \(error)")
+                    logger.log(error: error)
                     throw HCNetwork.Error.decodingError(error)
                 }
             case 401, 403:
@@ -184,7 +174,7 @@ final class ApiClient {
         } catch let error as HCNetwork.Error {
             throw error
         } catch {
-            print("❌ Error: \(error.localizedDescription)")
+            logger.log(error: error)
             throw HCNetwork.Error.networkError(error)
         }
     }
