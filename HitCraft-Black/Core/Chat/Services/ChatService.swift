@@ -30,7 +30,7 @@ final class ChatService {
         }
     }
     
-    func sendMessage(text: String, threadId: String) async throws -> ChatMessage {
+    func sendMessage(text: String, threadId: String) async throws -> MessageResponse {
         do {
             let path = HCNetwork.Endpoints.chatMessages(threadId: threadId)
             let fragment: [String: Any] = [
@@ -46,20 +46,34 @@ final class ChatService {
                 body: body
             )
             
-            return try parseChatMessageResponse(response)
+            return response
         } catch HCNetwork.Error.unauthorized {
             await HCAuthService.shared.logout()
-            return ChatMessage(
-                content: "Your session has expired. Please sign in again.",
-                sender: "assistant",
-                timestamp: Date()
+            // Create a mock MessageResponse for unauthorized error
+            return MessageResponse(
+                message: MessageData(
+                    content: [MessageContent(
+                        text: "Your session has expired. Please sign in again.",
+                        type: "text",
+                        format: nil
+                    )],
+                    timestamp: Date().ISO8601Format(),
+                    role: "assistant"
+                )
             )
         } catch {
             print("Error sending message: \(error.localizedDescription)")
-            return ChatMessage(
-                content: "Error",
-                sender: "assistant",
-                timestamp: Date()
+            // Create a mock MessageResponse for general error
+            return MessageResponse(
+                message: MessageData(
+                    content: [MessageContent(
+                        text: "Error sending message",
+                        type: "text",
+                        format: nil
+                    )],
+                    timestamp: Date().ISO8601Format(),
+                    role: "assistant"
+                )
             )
         }
     }
@@ -94,29 +108,5 @@ final class ChatService {
             print("Error listing messages: \(error.localizedDescription)")
             throw error
         }
-    }
-    
-    private func parseChatMessageResponse(_ response: MessageResponse) throws -> ChatMessage {
-        let messageData = response.message
-        let content = messageData.content.first
-        
-        guard let messageText = content?.text else {
-            throw HCNetwork.Error.decodingError(NSError(domain: "ChatService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to parse message response"]))
-        }
-        
-        // Parse ISO8601 date
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let date = formatter.date(from: messageData.timestamp) ?? Date()
-        
-        // Check if the response contains a format field
-        let type = content?.format == "markdown" ? "markdown" : "text"
-        
-        return ChatMessage(
-            content: messageText,
-            sender: messageData.role,
-            type: type,
-            timestamp: date
-        )
     }
 }

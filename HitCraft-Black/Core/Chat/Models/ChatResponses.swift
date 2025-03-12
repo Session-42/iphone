@@ -35,8 +35,6 @@ struct ThreadsResponse: Codable {
 }
 
 struct ThreadData: Codable {
-    // Add properties based on your API response
     let id: String
     let title: String
-    // Add other properties as needed
 } 

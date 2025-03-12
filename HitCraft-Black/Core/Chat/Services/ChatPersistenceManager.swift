@@ -8,7 +8,7 @@ import Combine
 class ChatPersistenceManager: ObservableObject {
     static let shared = ChatPersistenceManager()
     
-    @Published var messages: [ChatMessage] = []
+    @Published var messages: [MessageData] = []
     @Published var isInitialized: Bool = false
     @Published var hasActiveChat: Bool = false
     @Published var isTyping: Bool = false
@@ -36,14 +36,16 @@ class ChatPersistenceManager: ObservableObject {
             self.threadId = try await chatService.createChat(artistId: artistId)
             
             // Create a welcome message
-            let welcomeMessage = ChatMessage(
-                content: "Welcome! I'm HitCraft, your AI music assistant. How can I help with your music today?",
-                sender: "assistant",
-                timestamp: Date().addingTimeInterval(-3600) // 1 hour ago
+            let welcomeMessage = MessageResponse(
+                message: MessageData(
+                    content: [MessageContent(text: "Welcome! I'm HitCraft, your AI music assistant. How can I help with your music today?", type: "text", format: nil)],
+                    timestamp: ISO8601DateFormatter().string(from: Date()),
+                    role: "assistant"
+                )
             )
             
             // Update state
-            self.messages = [welcomeMessage]
+            self.messages = [welcomeMessage.message]
             self.isInitialized = true
             self.hasActiveChat = true
             
@@ -62,25 +64,28 @@ class ChatPersistenceManager: ObservableObject {
         if self.threadId == nil {
             await initializeChat(artistId: ArtistProfile.sample.id)
         }
-        // Create user message
-        let userMessage = ChatMessage(
-            content: text,
-            sender: "user"
+
+        let userMessageResponse = MessageResponse(
+            message: MessageData(
+                content: [MessageContent(text: text, type: "text", format: nil)],
+                timestamp: Date().ISO8601Format(),
+                role: "user"
+            )
         )
         
         // Add user message
-        messages.append(userMessage)
+        messages.append(userMessageResponse.message)
         
         // Set scroll anchor and trigger scroll
         scrollAnchor = UnitPoint(x: 0.5, y: 0.88)
-        triggerScrollTo(id: userMessage.id.uuidString, anchor: scrollAnchor)
+        triggerScrollTo(id: UUID().uuidString, anchor: scrollAnchor)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.isTyping = true
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 guard let self = self else { return }
-                self.triggerScrollTo(id: userMessage.id.uuidString, anchor: self.scrollAnchor)
+                self.triggerScrollTo(id: UUID().uuidString, anchor: self.scrollAnchor)
             }
         }
         
@@ -101,11 +106,11 @@ class ChatPersistenceManager: ObservableObject {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.isTyping = false
-                self.messages.append(responseMessage)
+                self.messages.append(responseMessage.message)
                 
-                let isLongResponse = responseMessage.content.count > 300
+                let isLongResponse = responseMessage.message.content.count > 300
                 let anchor: UnitPoint = isLongResponse ? .top : .bottom
-                self.triggerScrollTo(id: responseMessage.id.uuidString, anchor: anchor)
+                self.triggerScrollTo(id: UUID().uuidString, anchor: anchor)
             }
         } catch {
             print("Error sending message: \(error.localizedDescription)")
@@ -138,7 +143,7 @@ class ChatPersistenceManager: ObservableObject {
     // Trigger scroll to bottom
     func triggerScrollToBottom() {
         if let lastMessage = messages.last {
-            triggerScrollTo(id: lastMessage.id.uuidString, anchor: .bottom)
+            triggerScrollTo(id: UUID().uuidString, anchor: .bottom)
         } else {
             // Scroll to bottom spacer if no messages
             scrollTarget = "bottomSpacer"
@@ -166,6 +171,7 @@ class ChatPersistenceManager: ObservableObject {
         messages = []
         isInitialized = false
         hasActiveChat = false
+        threadId = nil
     }
     
     func prepareToLoadChatThread(threadId: String) {
@@ -181,29 +187,8 @@ class ChatPersistenceManager: ObservableObject {
             Task {
                 do {
                     let response = try await ChatService.shared.listMessages(threadId: threadId)
+                    messages = response.messages
         
-                    // Convert API messages to ChatMessage objects
-                    messages = response.messages.map { messageData in
-                        let content = messageData.content
-                            .filter { $0.type == "text" }
-                            .map { $0.text }
-                            .joined(separator: "\n")
-                        let type = messageData.content.first?.format == "markdown" ? "markdown" : "text"
-        
-                        // Parse timestamp
-                        let formatter = ISO8601DateFormatter()
-                        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                        let date = formatter.date(from: messageData.timestamp) ?? Date()
-        
-                        return ChatMessage(
-                            content: content,
-                            sender: messageData.role,
-                            type: type,
-                            timestamp: date
-                        )
-                    }
-        
-                    print("Messages loaded: \(messages.count)")
                     isTyping = false
                     isInitialized = true
                     hasActiveChat = true
