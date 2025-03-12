@@ -1,27 +1,55 @@
 import SwiftUI
 import WebKit
 
-struct MessageBubble: View {
-    let associatedMessage: MessageResponse
+struct MessageBubble: View, Equatable {
+    let associatedMessage: MessageData
     
-    init(associatedMessage: MessageResponse) {
+    // Add Equatable conformance
+    static func == (lhs: MessageBubble, rhs: MessageBubble) -> Bool {
+        lhs.associatedMessage.id == rhs.associatedMessage.id
+    }
+    
+    // Use a constant size instead of computing it repeatedly
+    private let messagePadding = HitCraftLayout.messagePadding
+    private let bubbleRadius = HitCraftLayout.messageBubbleRadius
+    
+    // Cache computed values
+    private let messageContents: [MessageContentView]
+    private let isSingleLine: Bool
+    private let isAssistantMessage: Bool
+    
+    init(associatedMessage: MessageData) {
         self.associatedMessage = associatedMessage
-    }
-    
-    // Helper computed properties
-    private var messageText: String {
-        associatedMessage.message.content
-            .filter { $0.type == "text" }
-            .map { $0.text }
-            .joined(separator: "\n")
-    }
-    
-    private var isSingleLine: Bool {
-        !messageText.contains("\n") && messageText.count < 50
-    }
-    
-    private var isAssistantMessage: Bool {
-        associatedMessage.message.role == "assistant"
+        
+        // Process all content types and wrap in a view model
+        var contentViews: [MessageContentView] = []
+        var textCount = 0
+        
+        for content in associatedMessage.content {
+            switch content {
+            case .text(let text):
+                if !text.isEmpty {
+                    contentViews.append(.text(text))
+                    textCount += 1
+                }
+            case .sketch_upload_request(let id, let process):
+                contentViews.append(.sketchUpload(id: id, process: process))
+            case .unknown:
+                break
+            }
+        }
+        
+        self.messageContents = contentViews
+        
+        // Only consider it a single line if there's just one text content and it's short
+        let onlyText = contentViews.count == 1 && contentViews.first?.isText == true
+        if onlyText, case .text(let text) = contentViews.first! {
+            self.isSingleLine = !text.contains("\n") && text.count < 50
+        } else {
+            self.isSingleLine = false
+        }
+        
+        self.isAssistantMessage = associatedMessage.role == "assistant"
     }
     
     var body: some View {
@@ -40,19 +68,17 @@ struct MessageBubble: View {
     private var assistantMessageView: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(messageText)
-                    .font(HitCraftFonts.body())
-                    .foregroundColor(HitCraftColors.text)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                ForEach(Array(messageContents.enumerated()), id: \.0) { index, content in
+                    contentView(for: content)
+                }
             }
             Spacer(minLength: 32)
         }
-        .padding(HitCraftLayout.messagePadding)
+        .padding(messagePadding)
         .frame(maxWidth: .infinity)
         .background(HitCraftColors.systemMessageBackground)
         .overlay(assistantMessageBorder)
-        .clipShape(RoundedRectangle(cornerRadius: HitCraftLayout.messageBubbleRadius))
+        .clipShape(RoundedRectangle(cornerRadius: bubbleRadius))
         .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
     }
     
@@ -64,19 +90,16 @@ struct MessageBubble: View {
                     .fill(HitCraftColors.accent)
                     .frame(width: 5, height: 2)
                     .offset(x: 0)
-                
                 Rectangle()
                     .fill(HitCraftColors.accent)
                     .frame(width: 2)
                     .frame(maxHeight: .infinity)
-                
                 Rectangle()
                     .fill(HitCraftColors.accent)
                     .frame(width: 5, height: 2)
                     .offset(x: 0)
             }
             .padding(.vertical, 0)
-            
             Spacer()
         }
     }
@@ -89,17 +112,47 @@ struct MessageBubble: View {
                 .frame(width: 32, height: 32)
                 .foregroundColor(Color.gray.opacity(0.7))
             
-            Text(messageText)
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(messageContents.enumerated()), id: \.0) { index, content in
+                    contentView(for: content)
+                }
+            }
+        }
+        .padding(messagePadding)
+        .frame(maxWidth: .infinity)
+        .background(HitCraftColors.userMessageBackground)
+        .clipShape(RoundedRectangle(cornerRadius: bubbleRadius))
+        .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
+    }
+    
+    // Helper to determine what view to show for each content type
+    @ViewBuilder
+    private func contentView(for content: MessageContentView) -> some View {
+        switch content {
+        case .text(let text):
+            Text(text)
                 .font(HitCraftFonts.body())
                 .foregroundColor(HitCraftColors.text)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, isSingleLine ? 8 : 0)
+                
+        case .sketchUpload(let id, let process):
+            SketchUploadView(sketchId: id, postProcess: process)
+                .frame(maxWidth: .infinity)
         }
-        .padding(HitCraftLayout.messagePadding)
-        .frame(maxWidth: .infinity)
-        .background(HitCraftColors.userMessageBackground)
-        .clipShape(RoundedRectangle(cornerRadius: HitCraftLayout.messageBubbleRadius))
-        .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
+    }
+}
+
+// Helper enum to represent different content views
+enum MessageContentView {
+    case text(String)
+    case sketchUpload(id: String, process: String?)
+    
+    var isText: Bool {
+        if case .text = self {
+            return true
+        }
+        return false
     }
 }

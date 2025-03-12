@@ -6,7 +6,7 @@ struct ChatThread: Identifiable {
     let artistId: String
     let lastMessageAt: Date
     
-    init(id: String, data: ThreadsResponse.ThreadData) {
+    init(id: String, data: ThreadData) {
         self.id = id
         self.title = data.title
         self.artistId = data.artistId

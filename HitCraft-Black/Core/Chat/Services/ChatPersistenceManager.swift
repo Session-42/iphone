@@ -8,7 +8,7 @@ import Combine
 class ChatPersistenceManager: ObservableObject {
     static let shared = ChatPersistenceManager()
     
-    @Published var messages: [MessageData] = []
+    @Published private(set) var messages: [MessageData] = []
     @Published var isInitialized: Bool = false
     @Published var hasActiveChat: Bool = false
     @Published var isTyping: Bool = false
@@ -24,7 +24,6 @@ class ChatPersistenceManager: ObservableObject {
     
     func initializeChat(artistId: String) async {
         if isInitialized && hasActiveChat && !messages.isEmpty {
-            // Chat already initialized
             return
         }
         
@@ -32,20 +31,7 @@ class ChatPersistenceManager: ObservableObject {
             // Clear previous messages
             messages = []
             
-            // Create chat thread and save ID
             self.threadId = try await chatService.createChat(artistId: artistId)
-            
-            // Create a welcome message
-            let welcomeMessage = MessageResponse(
-                message: MessageData(
-                    content: [MessageContent(text: "Welcome! I'm HitCraft, your AI music assistant. How can I help with your music today?", type: "text", format: nil)],
-                    timestamp: ISO8601DateFormatter().string(from: Date()),
-                    role: "assistant"
-                )
-            )
-            
-            // Update state
-            self.messages = [welcomeMessage.message]
             self.isInitialized = true
             self.hasActiveChat = true
             
@@ -65,16 +51,15 @@ class ChatPersistenceManager: ObservableObject {
             await initializeChat(artistId: ArtistProfile.sample.id)
         }
 
-        let userMessageResponse = MessageResponse(
-            message: MessageData(
-                content: [MessageContent(text: text, type: "text", format: nil)],
+        let userMessageResponse = MessageData(
+                content: [.text(content: text)],
                 timestamp: Date().ISO8601Format(),
-                role: "user"
+                role: "user",
+                id: UUID().uuidString
             )
-        )
         
         // Add user message
-        messages.append(userMessageResponse.message)
+        appendMessage(userMessageResponse)
         
         // Set scroll anchor and trigger scroll
         scrollAnchor = UnitPoint(x: 0.5, y: 0.88)
@@ -98,7 +83,7 @@ class ChatPersistenceManager: ObservableObject {
             }
             
             // Send message to API with unwrapped threadId
-            let responseMessage = try await chatService.sendMessage(
+            let responseMessage = try await chatService.sendTextMessage(
                 text: text,
                 threadId: threadId
             )
@@ -205,4 +190,12 @@ class ChatPersistenceManager: ObservableObject {
                 }
             }
         }
+
+    func appendMessage(_ message: MessageData) {
+        // Only append if the message doesn't already exist
+        if !messages.contains(where: { $0.id == message.id }) {
+            messages.append(message)
+            triggerScrollToBottom()
+        }
     }
+}

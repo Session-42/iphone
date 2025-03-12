@@ -69,13 +69,7 @@ struct ChatView: View {
                 .foregroundColor(HitCraftColors.text)
         }
         .onAppear {
-            if !chatManager.isInitialized {
-                Task {
-                    isLoadingMessages = true
-                    await chatManager.initializeChat(artistId: artistId)
-                    isLoadingMessages = false
-                }
-            } else {
+            if chatManager.isInitialized {
                 chatManager.triggerScrollToBottom()
             }
         }
