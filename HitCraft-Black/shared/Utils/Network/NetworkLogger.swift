@@ -20,8 +20,8 @@ final class NetworkLogger {
         print("📡 Response Status: \(httpResponse.statusCode)")
         if let data = data,
            let responseString = String(data: data, encoding: .utf8) {
-            let preview = responseString.count > 500 ? String(responseString.prefix(500)) + "..." : responseString
-            print("📄 Response Data: \(preview)")
+            // let preview = responseString.count > 500 ? String(responseString.prefix(500)) + "..." : responseString
+            print("📄 Response Data: \(responseString)")
         }
     }
     
