@@ -1,5 +1,3 @@
-// File: HitCraft-Black/Services/ArtistApi.swift
-
 import Foundation
 
 @MainActor

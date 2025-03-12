@@ -34,6 +34,12 @@ struct MessageBubble: View, Equatable {
                 }
             case .sketch_upload_request(let id, let process):
                 contentViews.append(.sketchUpload(id: id, process: process))
+            case .reference_selection(let referenceId, let candidatesId, let optionNumber):
+                contentViews.append(.referenceSelection(
+                    referenceId: referenceId, 
+                    candidatesId: candidatesId, 
+                    optionNumber: optionNumber
+                ))
             case .unknown:
                 break
             }
@@ -140,6 +146,13 @@ struct MessageBubble: View, Equatable {
         case .sketchUpload(let id, let process):
             SketchUploadView(sketchId: id, postProcess: process)
                 .frame(maxWidth: .infinity)
+        case .referenceSelection(let referenceId, let candidatesId, let optionNumber):
+            ReferenceSelectionView(
+                referenceId: referenceId,
+                referenceCandidatesId: candidatesId,
+                selectedOptionNumber: optionNumber
+            )
+            .frame(maxWidth: .infinity)
         }
     }
 }
@@ -148,6 +161,7 @@ struct MessageBubble: View, Equatable {
 enum MessageContentView {
     case text(String)
     case sketchUpload(id: String, process: String?)
+    case referenceSelection(referenceId: String, candidatesId: String, optionNumber: Int)
     
     var isText: Bool {
         if case .text = self {

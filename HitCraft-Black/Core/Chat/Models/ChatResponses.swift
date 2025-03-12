@@ -4,6 +4,7 @@ import Foundation
 enum MessageContentType: String, Codable {
     case text
     case sketch_upload_request
+    case reference_selection
     case unknown
     
     static func from(typeString: String) -> MessageContentType {
@@ -15,6 +16,7 @@ enum MessageContentType: String, Codable {
 enum MessageContent: Codable {
     case text(content: String)
     case sketch_upload_request(sketchUploadRequestId: String, postProcess: String?)
+    case reference_selection(referenceId: String, referenceCandidatesId: String, optionNumber: Int)
     case unknown(type: String)
     
     // Custom coding keys
@@ -23,6 +25,9 @@ enum MessageContent: Codable {
         case text
         case sketchUploadRequestId
         case postProcess
+        case referenceId
+        case referenceCandidatesId
+        case optionNumber
     }
     
     // Implement init(from:) to decode based on the "type" field
@@ -42,6 +47,12 @@ enum MessageContent: Codable {
             let sketchId = try container.decode(String.self, forKey: .sketchUploadRequestId)
             let postProcess = try container.decodeIfPresent(String.self, forKey: .postProcess)
             self = .sketch_upload_request(sketchUploadRequestId: sketchId, postProcess: postProcess)
+            
+        case MessageContentType.reference_selection.rawValue:
+            let referenceId = try container.decode(String.self, forKey: .referenceId)
+            let referenceCandidatesId = try container.decode(String.self, forKey: .referenceCandidatesId)
+            let optionNumber = try container.decode(Int.self, forKey: .optionNumber)
+            self = .reference_selection(referenceId: referenceId, referenceCandidatesId: referenceCandidatesId, optionNumber: optionNumber)
             
         default:
             self = .unknown(type: typeString)
@@ -63,6 +74,11 @@ enum MessageContent: Codable {
             if let postProcess = postProcess {
                 try container.encode(postProcess, forKey: .postProcess)
             }
+        case .reference_selection(let referenceId, let referenceCandidatesId, let optionNumber):
+            try container.encode(MessageContentType.reference_selection.rawValue, forKey: .type)
+            try container.encode(referenceId, forKey: .referenceId)
+            try container.encode(referenceCandidatesId, forKey: .referenceCandidatesId)
+            try container.encode(optionNumber, forKey: .optionNumber)
             
         case .unknown(let type):
             try container.encode(type, forKey: .type)
@@ -86,6 +102,13 @@ extension MessageContent {
                 dict["postProcess"] = postProcess
             }
             return dict
+         case .reference_selection(let referenceId, let referenceCandidatesId, let optionNumber):
+            return [
+                "type": MessageContentType.reference_selection.rawValue,
+                "referenceId": referenceId,
+                "referenceCandidatesId": referenceCandidatesId,
+                "optionNumber": optionNumber
+            ]
         case .unknown(let type):
             return ["type": type]
         }
