@@ -5,6 +5,7 @@ enum MessageContentType: String, Codable {
     case text
     case sketch_upload_request
     case reference_selection
+    case song_rendering_complete
     case unknown
     
     static func from(typeString: String) -> MessageContentType {
@@ -17,6 +18,7 @@ enum MessageContent: Codable {
     case text(content: String)
     case sketch_upload_request(sketchUploadRequestId: String, postProcess: String?)
     case reference_selection(referenceId: String, referenceCandidatesId: String, optionNumber: Int)
+    case song_rendering_complete(taskId: String, sketchId: String, butcherId: String)
     case unknown(type: String)
     
     // Custom coding keys
@@ -28,6 +30,9 @@ enum MessageContent: Codable {
         case referenceId
         case referenceCandidatesId
         case optionNumber
+        case taskId
+        case sketchId
+        case butcherId
     }
     
     // Implement init(from:) to decode based on the "type" field
@@ -53,6 +58,12 @@ enum MessageContent: Codable {
             let referenceCandidatesId = try container.decode(String.self, forKey: .referenceCandidatesId)
             let optionNumber = try container.decode(Int.self, forKey: .optionNumber)
             self = .reference_selection(referenceId: referenceId, referenceCandidatesId: referenceCandidatesId, optionNumber: optionNumber)
+
+        case MessageContentType.song_rendering_complete.rawValue:
+            let taskId = try container.decode(String.self, forKey: .taskId)
+            let sketchId = try container.decode(String.self, forKey: .sketchId)
+            let butcherId = try container.decode(String.self, forKey: .butcherId)
+            self = .song_rendering_complete(taskId: taskId, sketchId: sketchId, butcherId: butcherId)
             
         default:
             self = .unknown(type: typeString)
@@ -79,6 +90,11 @@ enum MessageContent: Codable {
             try container.encode(referenceId, forKey: .referenceId)
             try container.encode(referenceCandidatesId, forKey: .referenceCandidatesId)
             try container.encode(optionNumber, forKey: .optionNumber)
+        case .song_rendering_complete(let taskId, let sketchId, let butcherId):
+            try container.encode(MessageContentType.song_rendering_complete.rawValue, forKey: .type)
+            try container.encode(taskId, forKey: .taskId)
+            try container.encode(sketchId, forKey: .sketchId)
+            try container.encode(butcherId, forKey: .butcherId)
             
         case .unknown(let type):
             try container.encode(type, forKey: .type)
@@ -109,6 +125,13 @@ extension MessageContent {
                 "referenceCandidatesId": referenceCandidatesId,
                 "optionNumber": optionNumber
             ]
+        case .song_rendering_complete(let taskId, let sketchId, let butcherId):
+            return [
+                "type": MessageContentType.song_rendering_complete.rawValue,
+                "taskId": taskId,
+                "sketchId": sketchId,
+                "butcherId": butcherId
+            ]
         case .unknown(let type):
             return ["type": type]
         }
@@ -121,6 +144,14 @@ extension MessageContent {
 
     static func sketchUploadRequest(id: String, postProcess: String? = "analyze_sketch") -> MessageContent {
         return .sketch_upload_request(sketchUploadRequestId: id, postProcess: postProcess)
+    }
+
+    static func referenceSelection(referenceId: String, referenceCandidatesId: String, optionNumber: Int) -> MessageContent {
+        return .reference_selection(referenceId: referenceId, referenceCandidatesId: referenceCandidatesId, optionNumber: optionNumber)
+    }
+
+    static func songRenderingComplete(taskId: String, sketchId: String, butcherId: String) -> MessageContent {
+        return .song_rendering_complete(taskId: taskId, sketchId: sketchId, butcherId: butcherId)
     }
 }
 

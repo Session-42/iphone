@@ -40,6 +40,8 @@ struct MessageBubble: View, Equatable {
                     candidatesId: candidatesId, 
                     optionNumber: optionNumber
                 ))
+            case .song_rendering_complete(let taskId, let sketchId, let butcherId):
+                contentViews.append(.songRendering(taskId: taskId, sketchId: sketchId, butcherId: butcherId))
             case .unknown:
                 break
             }
@@ -153,6 +155,13 @@ struct MessageBubble: View, Equatable {
                 selectedOptionNumber: optionNumber
             )
             .frame(maxWidth: .infinity)
+        case .songRendering(let taskId, let sketchId, let butcherId):
+            SongRenderingView(
+                taskId: taskId,
+                sketchId: sketchId,
+                butcherId: butcherId
+            )
+            .frame(maxWidth: .infinity)
         }
     }
 }
@@ -162,6 +171,7 @@ enum MessageContentView {
     case text(String)
     case sketchUpload(id: String, process: String?)
     case referenceSelection(referenceId: String, candidatesId: String, optionNumber: Int)
+    case songRendering(taskId: String, sketchId: String, butcherId: String)
     
     var isText: Bool {
         if case .text = self {
