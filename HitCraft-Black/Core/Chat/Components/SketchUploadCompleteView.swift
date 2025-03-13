@@ -1,10 +1,8 @@
 import SwiftUI
 
 struct SketchUploadCompleteView: View {
-    let taskId: String
     let sketchId: String
     let sketchUploadRequestId: String
-    let songName: String
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -17,10 +15,6 @@ struct SketchUploadCompleteView: View {
                     Text("Upload Complete")
                         .font(HitCraftFonts.body())
                         .foregroundColor(HitCraftColors.text)
-                    
-                    Text(songName)
-                        .font(HitCraftFonts.caption())
-                        .foregroundColor(HitCraftColors.secondaryText)
                 }
             }
             

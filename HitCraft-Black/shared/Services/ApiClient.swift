@@ -90,6 +90,87 @@ final class ApiClient {
         }
     }
     
+    func uploadMultipartFormData<T: Codable>(
+        path: String,
+        fileURL: URL,
+        additionalFields: [String: String]? = nil
+    ) async throws -> T {
+        let fullURL = HCNetwork.Endpoints.apiBaseURL + path
+        logger.log(request: fullURL, method: "POST")
+        
+        guard let url = URL(string: fullURL) else {
+            throw HCNetwork.Error.invalidURL
+        }
+        
+        // Create multipart form data
+        let boundary = UUID().uuidString
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = timeoutInterval
+        
+        // Set up multipart form data
+        var data = Data()
+        
+        // Add file data
+        data.append("--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileURL.lastPathComponent)\"\r\n".data(using: .utf8)!)
+        data.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
+        data.append(try Data(contentsOf: fileURL))
+        data.append("\r\n".data(using: .utf8)!)
+        
+        // Add additional fields if provided
+        if let fields = additionalFields {
+            for (key, value) in fields {
+                data.append("--\(boundary)\r\n".data(using: .utf8)!)
+                data.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
+                data.append(value.data(using: .utf8)!)
+                data.append("\r\n".data(using: .utf8)!)
+            }
+        }
+        
+        data.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        // Set content type and length
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("\(data.count)", forHTTPHeaderField: "Content-Length")
+        
+        do {
+            // Add authentication headers
+            try addAuthenticationHeaders(&request)
+            
+            // Set the request body
+            request.httpBody = data
+            
+            // Perform the request
+            let (responseData, response) = try await urlSession.data(for: request)
+            logger.log(response: response, data: responseData)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw HCNetwork.Error.networkError(NSError(domain: "ApiClient", code: -1))
+            }
+            
+            // Handle response based on status code
+            switch httpResponse.statusCode {
+            case 200...299:
+                return try decoder.decode(T.self, from: responseData)
+            case 401, 403:
+                throw HCNetwork.Error.unauthorized
+            case 503:
+                throw HCNetwork.Error.serverUnavailable
+            default:
+                if let errorResponse = try? decoder.decode(HCNetwork.ErrorResponse.self, from: responseData) {
+                    throw HCNetwork.Error.serverError(code: httpResponse.statusCode, message: errorResponse.error)
+                }
+                throw HCNetwork.Error.serverError(code: httpResponse.statusCode, message: nil)
+            }
+        } catch let error as HCNetwork.Error {
+            throw error
+        } catch {
+            logger.log(error: error)
+            throw HCNetwork.Error.networkError(error)
+        }
+    }
+    
     // MARK: - Private Request Methods
     private func request<T: Codable>(path: String, method: String, body: [String: Any]? = nil) async throws -> T {
         let fullURL = HCNetwork.Endpoints.apiBaseURL + path

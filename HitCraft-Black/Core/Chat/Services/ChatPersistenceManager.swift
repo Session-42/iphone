@@ -46,17 +46,21 @@ class ChatPersistenceManager: ObservableObject {
     
     func sendMessage(text: String) async {
         guard !text.isEmpty else { return }
+        await sendMessage(content: .text(content: text))
+    }
+    
+    func sendMessage(content: MessageContent) async {
         // If no threadId exists, initialize the chat first
         if self.threadId == nil {
             await initializeChat(artistId: Constants.Artist.defaultId)
         }
 
         let userMessageResponse = MessageData(
-                content: [.text(content: text)],
-                timestamp: Date().ISO8601Format(),
-                role: "user",
-                id: UUID().uuidString
-            )
+            content: [content],
+            timestamp: Date().ISO8601Format(),
+            role: "user",
+            id: UUID().uuidString
+        )
         
         // Add user message
         appendMessage(userMessageResponse)
@@ -83,8 +87,9 @@ class ChatPersistenceManager: ObservableObject {
             }
             
             // Send message to API with unwrapped threadId
-            let responseMessage = try await chatService.sendTextMessage(
-                text: text,
+            print("Here: \(threadId)")
+            let responseMessage = try await chatService.sendMessage(
+                content: content,
                 threadId: threadId
             )
             

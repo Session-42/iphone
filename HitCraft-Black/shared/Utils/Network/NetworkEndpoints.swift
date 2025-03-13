@@ -3,7 +3,8 @@ import Foundation
 enum HCNetwork {
     enum Endpoints {
         // Base URLs
-        static let apiBaseURL = "https://api.dev.hitcraft.ai:8080"
+        // static let apiBaseURL = "https://api.dev.hitcraft.ai:8080"
+        static let apiBaseURL = "http://localhost:3500"
         static let authBaseURL = "https://auth.dev.hitcraft.ai"
         
         private static let base = "/api/v1"
@@ -19,5 +20,9 @@ enum HCNetwork {
         static func chatMessages(threadId: String) -> String { "\(chat)/\(threadId)/messages" }
         static func listChats(amount: Int = 3) -> String { "\(chat)/?amount=\(amount)" } // TODO: Change to by artist
         static func deleteChat(threadId: String) -> String { "\(chat)/\(threadId)" }
+
+        // Sketch endpoints
+        static let sketch = "\(base)/sketch"
+        static func uploadSketch() -> String { "\(sketch)/" }
     }
 }

@@ -34,6 +34,11 @@ struct MessageBubble: View, Equatable {
                 }
             case .sketch_upload_request(let id, let process):
                 contentViews.append(.sketchUpload(id: id, process: process))
+            case .sketch_upload_complete(let sketchId, let sketchUploadRequestId):
+                contentViews.append(.sketchUploadComplete(
+                    sketchId: sketchId,
+                    sketchUploadRequestId: sketchUploadRequestId
+                ))
             case .reference_selection(let referenceId, let candidatesId, let optionNumber):
                 contentViews.append(.referenceSelection(
                     referenceId: referenceId, 
@@ -42,19 +47,6 @@ struct MessageBubble: View, Equatable {
                 ))
             case .song_rendering_complete(let taskId, let sketchId, let butcherId):
                 contentViews.append(.songRendering(taskId: taskId, sketchId: sketchId, butcherId: butcherId))
-            case .sketch_upload_start(let taskId, let fileName, let sketchUploadRequestId):
-                contentViews.append(.sketchUploadStart(
-                    taskId: taskId,
-                    fileName: fileName,
-                    sketchUploadRequestId: sketchUploadRequestId
-                ))
-            case .sketch_upload_complete(let taskId, let sketchId, let sketchUploadRequestId, let songName):
-                contentViews.append(.sketchUploadComplete(
-                    taskId: taskId,
-                    sketchId: sketchId,
-                    sketchUploadRequestId: sketchUploadRequestId,
-                    songName: songName
-                ))
             case .unknown:
                 break
             }
@@ -159,8 +151,18 @@ struct MessageBubble: View, Equatable {
                 .padding(.vertical, isSingleLine ? 8 : 0)
                 
         case .sketchUpload(let id, let process):
-            SketchUploadView(sketchId: id, postProcess: process)
-                .frame(maxWidth: .infinity)
+            SketchUploadRequestView(
+                sketchId: id,
+                sketchUploadRequestId: id,
+                postProcess: process
+            )
+            .frame(maxWidth: .infinity)
+        case .sketchUploadComplete(let sketchId, let sketchUploadRequestId):
+            SketchUploadCompleteView(
+                sketchId: sketchId,
+                sketchUploadRequestId: sketchUploadRequestId
+            )
+            .frame(maxWidth: .infinity)
         case .referenceSelection(let referenceId, let candidatesId, let optionNumber):
             ReferenceSelectionView(
                 referenceId: referenceId,
@@ -175,21 +177,6 @@ struct MessageBubble: View, Equatable {
                 butcherId: butcherId
             )
             .frame(maxWidth: .infinity)
-        case .sketchUploadStart(let taskId, let fileName, let sketchUploadRequestId):
-            SketchUploadStartView(
-                taskId: taskId,
-                fileName: fileName,
-                sketchUploadRequestId: sketchUploadRequestId
-            )
-            .frame(maxWidth: .infinity)
-        case .sketchUploadComplete(let taskId, let sketchId, let sketchUploadRequestId, let songName):
-            SketchUploadCompleteView(
-                taskId: taskId,
-                sketchId: sketchId,
-                sketchUploadRequestId: sketchUploadRequestId,
-                songName: songName
-            )
-            .frame(maxWidth: .infinity)
         }
     }
 }
@@ -200,8 +187,7 @@ enum MessageContentView {
     case sketchUpload(id: String, process: String?)
     case referenceSelection(referenceId: String, candidatesId: String, optionNumber: Int)
     case songRendering(taskId: String, sketchId: String, butcherId: String)
-    case sketchUploadStart(taskId: String, fileName: String, sketchUploadRequestId: String)
-    case sketchUploadComplete(taskId: String, sketchId: String, sketchUploadRequestId: String, songName: String)
+    case sketchUploadComplete(sketchId: String, sketchUploadRequestId: String)
     
     var isText: Bool {
         if case .text = self {
