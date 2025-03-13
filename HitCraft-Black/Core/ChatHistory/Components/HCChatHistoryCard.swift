@@ -5,6 +5,7 @@ struct HCChatHistoryCard: View {
     let isExpanded: Bool
     let onTap: () -> Void
     let onLoadChat: () -> Void
+    let onDelete: () -> Void
     
     var body: some View {
         VStack(spacing: 0) {
@@ -58,6 +59,18 @@ struct HCChatHistoryCard: View {
                     }
                     
                     Spacer()
+                    
+                    Button(action: onDelete) {
+                        HStack {
+                            Image(systemName: "trash.fill")
+                            Text("Delete")
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 15)
+                        .background(Color.red.opacity(0.2))
+                        .foregroundColor(.red)
+                        .cornerRadius(20)
+                    }
                 }
                 .padding()
                 .background(HitCraftColors.cardBackground)

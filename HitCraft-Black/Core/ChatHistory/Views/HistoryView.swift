@@ -20,6 +20,7 @@ private struct ChatListItem: View {
     let isExpanded: Bool
     let onTap: () -> Void
     let chatManager: ChatPersistenceManager
+    let viewModel: HistoryViewModel
     
     var body: some View {
         HCChatHistoryCard(
@@ -37,6 +38,11 @@ private struct ChatListItem: View {
                         userInfo: ["tab": MenuTab.chat]
                     )
                 }
+            },
+            onDelete: {
+                Task {
+                    await viewModel.deleteChat(threadId: thread.id)
+                }
             }
         )
     }
@@ -48,6 +54,7 @@ private struct ChatListView: View {
     let expandedCardId: String?
     let onCardTap: (ChatThread) -> Void
     let chatManager: ChatPersistenceManager
+    let viewModel: HistoryViewModel
     
     var body: some View {
         ScrollView {
@@ -57,7 +64,8 @@ private struct ChatListView: View {
                         thread: thread,
                         isExpanded: expandedCardId == thread.id,
                         onTap: { onCardTap(thread) },
-                        chatManager: chatManager
+                        chatManager: chatManager,
+                        viewModel: viewModel
                     )
                 }
             }
@@ -91,7 +99,8 @@ struct HistoryView: View {
                             expandedCardId = expandedCardId == thread.id ? nil : thread.id
                         }
                     },
-                    chatManager: chatManager
+                    chatManager: chatManager,
+                    viewModel: viewModel
                 )
                 .refreshable {
                     await viewModel.refreshChatThreads()
@@ -176,6 +185,20 @@ class HistoryViewModel: ObservableObject {
                 self.isLoading = false
             }
             print("Error refreshing chat threads: \(error.localizedDescription)")
+        }
+    }
+    
+    func deleteChat(threadId: String) async {
+        do {
+            try await chatService.deleteChat(threadId: threadId)
+            await MainActor.run {
+                self.chatThreads.removeAll { $0.id == threadId }
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Failed to delete chat: \(error.localizedDescription)"
+            }
+            print("Error deleting chat: \(error.localizedDescription)")
         }
     }
 }

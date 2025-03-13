@@ -79,4 +79,18 @@ final class ChatService {
             throw error
         }
     }
+    
+    func deleteChat(threadId: String) async throws {
+        do {
+            let path = HCNetwork.Endpoints.deleteChat(threadId: threadId)
+            print("📍 Deleting chat thread: \(threadId)")
+            try await apiClient.delete(path: path)
+        } catch HCNetwork.Error.unauthorized {
+            await HCAuthService.shared.logout()
+            throw HCNetwork.Error.unauthorized
+        } catch {
+            print("Error deleting chat: \(error.localizedDescription)")
+            throw error
+        }
+    }
 }

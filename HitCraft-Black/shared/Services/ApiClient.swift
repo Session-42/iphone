@@ -40,6 +40,56 @@ final class ApiClient {
         return try await requestAnyResponse(path: path, method: "POST", body: body)
     }
     
+    func delete(path: String) async throws {
+        let fullURL = HCNetwork.Endpoints.apiBaseURL + path
+        logger.log(request: fullURL, method: "DELETE")
+        
+        guard let url = URL(string: fullURL) else {
+            throw HCNetwork.Error.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.timeoutInterval = timeoutInterval
+        
+        // Set standard headers
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        
+        do {
+            // Add authentication headers
+            try addAuthenticationHeaders(&request)
+            
+            // Perform the request
+            let (data, response) = try await urlSession.data(for: request)
+            logger.log(response: response, data: data)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw HCNetwork.Error.networkError(NSError(domain: "ApiClient", code: -1))
+            }
+            
+            // Handle response based on status code
+            switch httpResponse.statusCode {
+            case 200...299:
+                return
+            case 401, 403:
+                throw HCNetwork.Error.unauthorized
+            case 503:
+                throw HCNetwork.Error.serverUnavailable
+            default:
+                if let errorResponse = try? decoder.decode(HCNetwork.ErrorResponse.self, from: data) {
+                    throw HCNetwork.Error.serverError(code: httpResponse.statusCode, message: errorResponse.error)
+                }
+                throw HCNetwork.Error.serverError(code: httpResponse.statusCode, message: nil)
+            }
+        } catch let error as HCNetwork.Error {
+            throw error
+        } catch {
+            logger.log(error: error)
+            throw HCNetwork.Error.networkError(error)
+        }
+    }
+    
     // MARK: - Private Request Methods
     private func request<T: Codable>(path: String, method: String, body: [String: Any]? = nil) async throws -> T {
         let fullURL = HCNetwork.Endpoints.apiBaseURL + path

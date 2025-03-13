@@ -18,5 +18,6 @@ enum HCNetwork {
         static func createChat() -> String { "\(chat)/" }
         static func chatMessages(threadId: String) -> String { "\(chat)/\(threadId)/messages" }
         static func listChats(amount: Int = 3) -> String { "\(chat)/?amount=\(amount)" } // TODO: Change to by artist
+        static func deleteChat(threadId: String) -> String { "\(chat)/\(threadId)" }
     }
 }
