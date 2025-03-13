@@ -48,7 +48,7 @@ class ChatPersistenceManager: ObservableObject {
         guard !text.isEmpty else { return }
         // If no threadId exists, initialize the chat first
         if self.threadId == nil {
-            await initializeChat(artistId: ArtistProfile.sample.id)
+            await initializeChat(artistId: Constants.Artist.defaultId)
         }
 
         let userMessageResponse = MessageData(

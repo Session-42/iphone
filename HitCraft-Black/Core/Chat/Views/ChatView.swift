@@ -10,7 +10,7 @@ struct ChatView: View {
     @State private var keyboardHeight: CGFloat = 0
     @State private var bottomPadding: CGFloat = 80
     
-    private let artistId = ArtistProfile.sample.id
+    private let artistId = Constants.Artist.defaultId
     private let showInputField = true
     
     var body: some View {
@@ -29,7 +29,6 @@ struct ChatView: View {
                         Task {
                             chatManager.clearChat()
                             isLoadingMessages = true
-                            await chatManager.initializeChat(artistId: artistId)
                             isLoadingMessages = false
                         }
                     }) {

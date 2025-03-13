@@ -1,5 +1,3 @@
-// File: HitCraft-Black/Services/ApiClient.swift
-
 import Foundation
 import DescopeKit
 
@@ -44,7 +42,7 @@ final class ApiClient {
     
     // MARK: - Private Request Methods
     private func request<T: Codable>(path: String, method: String, body: [String: Any]? = nil) async throws -> T {
-        let fullURL = HCNetwork.Environment.apiBaseURL + path
+        let fullURL = HCNetwork.Endpoints.apiBaseURL + path
         logger.log(request: fullURL, method: method, body: body)
         
         guard let url = URL(string: fullURL) else {
@@ -111,7 +109,7 @@ final class ApiClient {
     }
     
     private func requestAnyResponse(path: String, method: String, body: [String: Any]? = nil) async throws -> [String: Any] {
-        let fullURL = HCNetwork.Environment.apiBaseURL + path
+        let fullURL = HCNetwork.Endpoints.apiBaseURL + path
         logger.log(request: fullURL, method: method, body: body)
         
         guard let url = URL(string: fullURL) else {

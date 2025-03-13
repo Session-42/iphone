@@ -106,7 +106,7 @@ struct HistoryView: View {
     
     private func startNewChat() {
         Task {
-            await chatManager.initializeChat(artistId: ArtistProfile.sample.id)
+            await chatManager.initializeChat(artistId: Constants.Artist.defaultId)
             NotificationCenter.default.post(
                 name: NSNotification.Name("SwitchToTab"),
                 object: nil,

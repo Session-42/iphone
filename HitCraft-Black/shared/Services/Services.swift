@@ -11,13 +11,11 @@ final class HCServices {
     
     // MARK: - Services
     let auth: HCAuthService
-    let artistApi: ArtistApi
     let chatService: ChatService
     
     // MARK: - Initialization
     private init() {
         auth = HCAuthService.shared
-        artistApi = ArtistApi.shared
         chatService = ChatService.shared
     }
 }
@@ -30,12 +28,12 @@ final class HCAuthService: ObservableObject {
     @Published var isLoading = false
     
     static let shared = HCAuthService()
-    private let projectId = "P2rIvbtGcXTcUfT68LGuVqPitlJd"
+    private let projectId = Constants.Auth.descopeProjectId
     
     // MARK: - Initialization
     private init() {
         Descope.setup(projectId: projectId) { config in
-            config.baseURL = "https://auth.dev.hitcraft.ai"
+            config.baseURL = HCNetwork.Endpoints.authBaseURL
         }
         
         Task {
@@ -50,7 +48,7 @@ final class HCAuthService: ObservableObject {
     
     func startAuthFlow() {
         Task { @MainActor in
-            let flowUrl = "https://auth.dev.hitcraft.ai/login/\(projectId)?flow=sign-in-v2"
+            let flowUrl = "\(HCNetwork.Endpoints.authBaseURL)/login/\(projectId)?flow=sign-in-v2"
             let flow = DescopeFlow(url: flowUrl)
             let flowVC = DescopeFlowViewController()
             flowVC.delegate = self

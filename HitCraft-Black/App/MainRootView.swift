@@ -6,7 +6,6 @@ struct MainRootView: View {
     @EnvironmentObject private var authService: HCAuthService
     @EnvironmentObject private var themeManager: ThemeManager
     @State private var selectedTab: MenuTab = .chat
-    @State private var defaultArtist = ArtistProfile.sample
     
     var body: some View {
         VStack(spacing: 0) {

@@ -8,11 +8,11 @@ final class AuthService: ObservableObject {
     @Published var isLoading = false
     
     static let shared = AuthService()
-    private let projectId = "P2rIvbtGcXTcUfT68LGuVqPitlJd"
+    private let projectId = Constants.Auth.descopeProjectId
     
     private init() {
         Descope.setup(projectId: projectId) { config in
-            config.baseURL = "https://auth.dev.hitcraft.ai"
+            config.baseURL = HCNetwork.Endpoints.authBaseURL
         }
         
         Task {
@@ -26,7 +26,7 @@ final class AuthService: ObservableObject {
     
     func startAuthFlow() {
         Task { @MainActor in
-            let flowUrl = "https://auth.dev.hitcraft.ai/login/\(projectId)?flow=sign-in-v2"
+            let flowUrl = "\(HCNetwork.Endpoints.authBaseURL)/login/\(projectId)?flow=sign-in-v2"
             let flow = DescopeFlow(url: flowUrl)
             let flowVC = DescopeFlowViewController()
             flowVC.delegate = self
