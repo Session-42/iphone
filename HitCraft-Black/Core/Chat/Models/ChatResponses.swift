@@ -7,6 +7,7 @@ enum MessageContentType: String, Codable {
     case sketch_upload_complete
     case reference_selection
     case song_rendering_complete
+    case song_analysis_start
     case unknown
     
     static func from(typeString: String) -> MessageContentType {
@@ -21,6 +22,7 @@ enum MessageContent: Codable {
     case sketch_upload_complete(sketchId: String, sketchUploadRequestId: String)
     case reference_selection(referenceId: String, referenceCandidatesId: String, optionNumber: Int)
     case song_rendering_complete(taskId: String, sketchId: String, butcherId: String)
+    case song_analysis_start(taskId: String, sketchId: String)
     case unknown(type: String)
     
     // Custom coding keys
@@ -67,7 +69,12 @@ enum MessageContent: Codable {
             let referenceCandidatesId = try container.decode(String.self, forKey: .referenceCandidatesId)
             let optionNumber = try container.decode(Int.self, forKey: .optionNumber)
             self = .reference_selection(referenceId: referenceId, referenceCandidatesId: referenceCandidatesId, optionNumber: optionNumber)
-
+            
+        case MessageContentType.song_analysis_start.rawValue:
+            let taskId = try container.decode(String.self, forKey: .taskId)
+            let sketchId = try container.decode(String.self, forKey: .sketchId)
+            self = .song_analysis_start(taskId: taskId, sketchId: sketchId)
+            
         case MessageContentType.song_rendering_complete.rawValue:
             let taskId = try container.decode(String.self, forKey: .taskId)
             let sketchId = try container.decode(String.self, forKey: .sketchId)
@@ -108,7 +115,10 @@ enum MessageContent: Codable {
             try container.encode(taskId, forKey: .taskId)
             try container.encode(sketchId, forKey: .sketchId)
             try container.encode(butcherId, forKey: .butcherId)
-            
+        case .song_analysis_start(let taskId, let sketchId):
+            try container.encode(MessageContentType.song_analysis_start.rawValue, forKey: .type)
+            try container.encode(taskId, forKey: .taskId)
+            try container.encode(sketchId, forKey: .sketchId)
         case .unknown(let type):
             try container.encode(type, forKey: .type)
         }
@@ -137,7 +147,7 @@ extension MessageContent {
                 "sketchId": sketchId,
                 "sketchUploadRequestId": sketchUploadRequestId,
             ]
-         case .reference_selection(let referenceId, let referenceCandidatesId, let optionNumber):
+        case .reference_selection(let referenceId, let referenceCandidatesId, let optionNumber):
             return [
                 "type": MessageContentType.reference_selection.rawValue,
                 "referenceId": referenceId,
@@ -150,6 +160,12 @@ extension MessageContent {
                 "taskId": taskId,
                 "sketchId": sketchId,
                 "butcherId": butcherId
+            ]
+        case .song_analysis_start(let taskId, let sketchId):
+            return [
+                "type": MessageContentType.song_analysis_start.rawValue,
+                "taskId": taskId,
+                "sketchId": sketchId
             ]
         case .unknown(let type):
             return ["type": type]
@@ -175,6 +191,10 @@ extension MessageContent {
 
     static func songRenderingComplete(taskId: String, sketchId: String, butcherId: String) -> MessageContent {
         return .song_rendering_complete(taskId: taskId, sketchId: sketchId, butcherId: butcherId)
+    }
+
+    static func songAnalysisStart(taskId: String, sketchId: String) -> MessageContent {
+        return .song_analysis_start(taskId: taskId, sketchId: sketchId)
     }
 }
 
@@ -206,4 +226,8 @@ struct ThreadsResponse: Codable {
 
 struct CreateChatResponse: Codable {
     let threadId: String
+}
+
+struct PendingMessagesResponse: Codable {
+    let messages: [MessageData]
 }

@@ -93,4 +93,17 @@ final class ChatService {
             throw error
         }
     }
+
+    func getThreadPendingMessages(threadId: String) async throws -> [MessageData] {
+        do {
+            let path = HCNetwork.Endpoints.threadPendingMessages(threadId: threadId)
+            
+            let response: PendingMessagesResponse = try await apiClient.get(path: path)
+            
+            return response.messages
+        } catch {
+            print("Error fetching pending messages: \(error.localizedDescription)")
+            throw error
+        }
+    }
 }

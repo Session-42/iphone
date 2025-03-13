@@ -102,9 +102,26 @@ class ChatPersistenceManager: ObservableObject {
                 let anchor: UnitPoint = isLongResponse ? .top : .bottom
                 self.triggerScrollTo(id: UUID().uuidString, anchor: anchor)
             }
+            
+            // After sending a message, check for any pending messages (especially for file uploads)
+            await checkPendingMessages(threadId: threadId)
         } catch {
             print("Error sending message: \(error.localizedDescription)")
             isTyping = false
+        }
+    }
+    
+    // New method to check for pending messages after sending a message
+    func checkPendingMessages(threadId: String) async -> [MessageData] {
+        do {
+            // Delay to allow backend processing
+            try await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+            
+            let response = try await chatService.getThreadPendingMessages(threadId: threadId)
+            return response
+        } catch {
+            print("Error checking pending messages: \(error.localizedDescription)")
+            return []
         }
     }
     
@@ -165,36 +182,38 @@ class ChatPersistenceManager: ObservableObject {
     }
     
     func prepareToLoadChatThread(threadId: String) {
-            // Clear any existing messages
-            messages = []
-        
-            // Set the active thread ID
-            self.threadId = threadId
-        
-            // Show loading state briefly
-            isTyping = true
-        
-            Task {
-                do {
-                    let response = try await ChatService.shared.listMessages(threadId: threadId)
-                    messages = response.messages
-        
-                    isTyping = false
-                    isInitialized = true
-                    hasActiveChat = true
-        
-                    // Scroll to the latest message
-                    triggerScrollToBottom()
-        
-                    // Post notification that messages are loaded
-                    NotificationCenter.default.post(name: NSNotification.Name("ChatThreadLoaded"), object: nil)
-        
-                } catch {
-                    print("Error loading messages: \(error)")
-                    isTyping = false
-                }
+        // Clear any existing messages
+        messages = []
+    
+        // Set the active thread ID
+        self.threadId = threadId
+    
+        // Show loading state briefly
+        isTyping = true
+    
+        Task {
+            do {
+                let response = try await ChatService.shared.listMessages(threadId: threadId)
+                messages = response.messages
+    
+                isTyping = false
+                isInitialized = true
+                hasActiveChat = true
+    
+                // Scroll to the latest message
+                triggerScrollToBottom()
+    
+                // Post notification that messages are loaded
+                NotificationCenter.default.post(name: NSNotification.Name("ChatThreadLoaded"), object: nil)
+    
+                // After loading messages, check for any pending messages
+                await checkPendingMessages(threadId: threadId)
+            } catch {
+                print("Error loading messages: \(error)")
+                isTyping = false
             }
         }
+    }
 
     func appendMessage(_ message: MessageData) {
         // Only append if the message doesn't already exist

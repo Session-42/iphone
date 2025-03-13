@@ -9,10 +9,13 @@ struct SketchUploadRequestView: View {
     @State private var isUploading = false
     @State private var error: Error?
     @State private var showError = false
+    @State private var hasUploadedFile = false // Track if we've already uploaded a file
     
     var body: some View {
         Button(action: {
-            isShowingFilePicker = true
+            if !hasUploadedFile {
+                isShowingFilePicker = true
+            }
         }) {
             HStack {
                 Image(systemName: "photo")
@@ -24,7 +27,7 @@ struct SketchUploadRequestView: View {
                         .font(.headline)
                         .foregroundColor(HitCraftColors.text)
                     
-                    Text("Tap to select a file")
+                    Text(hasUploadedFile ? "File uploaded" : "Tap to select a file")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         
@@ -37,7 +40,7 @@ struct SketchUploadRequestView: View {
                 
                 Spacer()
                 
-                Image(systemName: "chevron.right")
+                Image(systemName: hasUploadedFile ? "checkmark" : "chevron.right")
                     .foregroundColor(.secondary)
             }
             .padding()
@@ -49,11 +52,14 @@ struct SketchUploadRequestView: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+        .disabled(isUploading || hasUploadedFile) // Disable button while uploading or after successful upload
         .sheet(isPresented: $isShowingFilePicker) {
             FilePicker(
                 onFileSelected: { url in
-                    Task {
-                        await uploadFile(url)
+                    if !hasUploadedFile {
+                        Task {
+                            await uploadFile(url)
+                        }
                     }
                 }
             )
@@ -67,6 +73,8 @@ struct SketchUploadRequestView: View {
     }
     
     private func uploadFile(_ url: URL) async {
+        guard !hasUploadedFile else { return } // Prevent multiple uploads
+        
         isUploading = true
         do {
             // let response = try await SketchService.shared.uploadSketch(
@@ -74,6 +82,9 @@ struct SketchUploadRequestView: View {
             //     postProcess: postProcess
             // )
             let mock_sketch_id = "67bf0e2206841ceacce8baa3"
+            
+            // Set this flag to true BEFORE sending the message
+            hasUploadedFile = true
             
             // Send a message to the chat with the upload complete
             await ChatPersistenceManager.shared.sendMessage(
@@ -83,9 +94,15 @@ struct SketchUploadRequestView: View {
                     sketchUploadRequestId: sketchUploadRequestId
                 )
             )
+
+            // Check for pending messages after upload complete and save results
+            if let threadId = ChatPersistenceManager.shared.threadId {
+                let pendingMessages = await ChatPersistenceManager.shared.checkPendingMessages(threadId: threadId)
+            }
         } catch {
             self.error = error
             self.showError = true
+            hasUploadedFile = false // Reset flag if upload fails
         }
         isUploading = false
     }
@@ -110,15 +127,21 @@ struct FilePicker: UIViewControllerRepresentable {
     
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         let parent: FilePicker
+        private var hasHandledSelection = false
         
         init(_ parent: FilePicker) {
             self.parent = parent
         }
         
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            guard let url = urls.first else { return }
+            // Ensure we only handle the selection once
+            guard !hasHandledSelection, let url = urls.first else { return }
+            hasHandledSelection = true
             parent.onFileSelected(url)
-            controller.dismiss(animated: true)
+            controller.dismiss(animated: true) {
+                // Reset the flag after dismissal to prevent any potential race conditions
+                self.hasHandledSelection = false
+            }
         }
     }
 }

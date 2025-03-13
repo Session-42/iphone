@@ -20,6 +20,7 @@ enum HCNetwork {
         static func chatMessages(threadId: String) -> String { "\(chat)/\(threadId)/messages" }
         static func listChats(amount: Int = 3) -> String { "\(chat)/?amount=\(amount)" } // TODO: Change to by artist
         static func deleteChat(threadId: String) -> String { "\(chat)/\(threadId)" }
+        static func threadPendingMessages(threadId: String) -> String { "\(chat)/\(threadId)/pending-messages" }
 
         // Sketch endpoints
         static let sketch = "\(base)/sketch"
