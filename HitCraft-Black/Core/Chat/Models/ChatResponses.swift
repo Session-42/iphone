@@ -6,6 +6,8 @@ enum MessageContentType: String, Codable {
     case sketch_upload_request
     case reference_selection
     case song_rendering_complete
+    case sketch_upload_start
+    case sketch_upload_complete
     case unknown
     
     static func from(typeString: String) -> MessageContentType {
@@ -19,6 +21,8 @@ enum MessageContent: Codable {
     case sketch_upload_request(sketchUploadRequestId: String, postProcess: String?)
     case reference_selection(referenceId: String, referenceCandidatesId: String, optionNumber: Int)
     case song_rendering_complete(taskId: String, sketchId: String, butcherId: String)
+    case sketch_upload_start(taskId: String, fileName: String, sketchUploadRequestId: String)
+    case sketch_upload_complete(taskId: String, sketchId: String, sketchUploadRequestId: String, songName: String)
     case unknown(type: String)
     
     // Custom coding keys
@@ -33,6 +37,8 @@ enum MessageContent: Codable {
         case taskId
         case sketchId
         case butcherId
+        case fileName
+        case songName
     }
     
     // Implement init(from:) to decode based on the "type" field
@@ -65,6 +71,19 @@ enum MessageContent: Codable {
             let butcherId = try container.decode(String.self, forKey: .butcherId)
             self = .song_rendering_complete(taskId: taskId, sketchId: sketchId, butcherId: butcherId)
             
+        case MessageContentType.sketch_upload_start.rawValue:
+            let taskId = try container.decode(String.self, forKey: .taskId)
+            let fileName = try container.decode(String.self, forKey: .fileName)
+            let sketchUploadRequestId = try container.decode(String.self, forKey: .sketchUploadRequestId)
+            self = .sketch_upload_start(taskId: taskId, fileName: fileName, sketchUploadRequestId: sketchUploadRequestId)
+            
+        case MessageContentType.sketch_upload_complete.rawValue:
+            let taskId = try container.decode(String.self, forKey: .taskId)
+            let sketchId = try container.decode(String.self, forKey: .sketchId)
+            let sketchUploadRequestId = try container.decode(String.self, forKey: .sketchUploadRequestId)
+            let songName = try container.decode(String.self, forKey: .songName)
+            self = .sketch_upload_complete(taskId: taskId, sketchId: sketchId, sketchUploadRequestId: sketchUploadRequestId, songName: songName)
+            
         default:
             self = .unknown(type: typeString)
         }
@@ -95,6 +114,19 @@ enum MessageContent: Codable {
             try container.encode(taskId, forKey: .taskId)
             try container.encode(sketchId, forKey: .sketchId)
             try container.encode(butcherId, forKey: .butcherId)
+            
+        case .sketch_upload_start(let taskId, let fileName, let sketchUploadRequestId):
+            try container.encode(MessageContentType.sketch_upload_start.rawValue, forKey: .type)
+            try container.encode(taskId, forKey: .taskId)
+            try container.encode(fileName, forKey: .fileName)
+            try container.encode(sketchUploadRequestId, forKey: .sketchUploadRequestId)
+            
+        case .sketch_upload_complete(let taskId, let sketchId, let sketchUploadRequestId, let songName):
+            try container.encode(MessageContentType.sketch_upload_complete.rawValue, forKey: .type)
+            try container.encode(taskId, forKey: .taskId)
+            try container.encode(sketchId, forKey: .sketchId)
+            try container.encode(sketchUploadRequestId, forKey: .sketchUploadRequestId)
+            try container.encode(songName, forKey: .songName)
             
         case .unknown(let type):
             try container.encode(type, forKey: .type)
@@ -132,6 +164,21 @@ extension MessageContent {
                 "sketchId": sketchId,
                 "butcherId": butcherId
             ]
+        case .sketch_upload_start(let taskId, let fileName, let sketchUploadRequestId):
+            return [
+                "type": MessageContentType.sketch_upload_start.rawValue,
+                "taskId": taskId,
+                "fileName": fileName,
+                "sketchUploadRequestId": sketchUploadRequestId
+            ]
+        case .sketch_upload_complete(let taskId, let sketchId, let sketchUploadRequestId, let songName):
+            return [
+                "type": MessageContentType.sketch_upload_complete.rawValue,
+                "taskId": taskId,
+                "sketchId": sketchId,
+                "sketchUploadRequestId": sketchUploadRequestId,
+                "songName": songName
+            ]
         case .unknown(let type):
             return ["type": type]
         }
@@ -152,6 +199,14 @@ extension MessageContent {
 
     static func songRenderingComplete(taskId: String, sketchId: String, butcherId: String) -> MessageContent {
         return .song_rendering_complete(taskId: taskId, sketchId: sketchId, butcherId: butcherId)
+    }
+    
+    static func sketchUploadStart(taskId: String, fileName: String, sketchUploadRequestId: String) -> MessageContent {
+        return .sketch_upload_start(taskId: taskId, fileName: fileName, sketchUploadRequestId: sketchUploadRequestId)
+    }
+    
+    static func sketchUploadComplete(taskId: String, sketchId: String, sketchUploadRequestId: String, songName: String) -> MessageContent {
+        return .sketch_upload_complete(taskId: taskId, sketchId: sketchId, sketchUploadRequestId: sketchUploadRequestId, songName: songName)
     }
 }
 
