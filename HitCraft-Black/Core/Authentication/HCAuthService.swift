@@ -1,15 +1,17 @@
 import Foundation
 import DescopeKit
-import SwiftUI
+import UIKit
 
 @MainActor
-final class AuthService: ObservableObject {
+final class HCAuthService: ObservableObject {
+    // MARK: - Properties
     @Published var isAuthenticated = false
     @Published var isLoading = false
     
-    static let shared = AuthService()
+    static let shared = HCAuthService()
     private let projectId = Constants.Auth.descopeProjectId
     
+    // MARK: - Initialization
     private init() {
         Descope.setup(projectId: projectId) { config in
             config.baseURL = HCNetwork.Endpoints.authBaseURL
@@ -20,6 +22,7 @@ final class AuthService: ObservableObject {
         }
     }
     
+    // MARK: - Public Methods
     private func checkAuthentication() async -> Bool {
         return Descope.sessionManager.session != nil
     }
@@ -45,7 +48,8 @@ final class AuthService: ObservableObject {
     }
 }
 
-extension AuthService: DescopeFlowViewControllerDelegate {
+// MARK: - Auth Delegate Extension
+extension HCAuthService: DescopeFlowViewControllerDelegate {
     nonisolated func flowViewControllerDidFinish(_ controller: DescopeFlowViewController, response: AuthenticationResponse) {
         Task { @MainActor in
             let session = DescopeSession(from: response)
@@ -70,4 +74,4 @@ extension AuthService: DescopeFlowViewControllerDelegate {
         }
     }
     nonisolated func flowViewControllerShouldShowURL(_ controller: DescopeFlowViewController, url: URL, external: Bool) -> Bool { true }
-}
+} 
