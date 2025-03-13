@@ -94,11 +94,6 @@ struct SketchUploadRequestView: View {
                     sketchUploadRequestId: sketchUploadRequestId
                 )
             )
-
-            // Check for pending messages after upload complete and save results
-            if let threadId = ChatPersistenceManager.shared.threadId {
-                let pendingMessages = await ChatPersistenceManager.shared.checkPendingMessages(threadId: threadId)
-            }
         } catch {
             self.error = error
             self.showError = true
